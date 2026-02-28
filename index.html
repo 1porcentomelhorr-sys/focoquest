@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FocoQuest</title>
+<meta name="theme-color" content="#f0a500">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FocoQuest">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   VARIABLES & RESET
+═══════════════════════════════════════════════ */
+:root {
+  --bg:#09090f; --bg2:#0e0e1a; --surface:#131320; --surface2:#1a1a2e;
+  --surface3:#22223a; --border:#2a2a45; --border2:#3a3a5c;
+  --accent:#f0a500; --accent-dim:rgba(240,165,0,0.12); --accent-glow:rgba(240,165,0,0.35);
+  --gold:#ffd700; --green:#3ecf8e; --green-dim:rgba(62,207,142,0.13);
+  --purple:#9b6dff; --purple-dim:rgba(155,109,255,0.13);
+  --red:#e05c2a; --red-dim:rgba(224,92,42,0.13);
+  --blue:#4a9eff; --blue-dim:rgba(74,158,255,0.13);
+  --pink:#ff6b9d;
+  --text:#eaeaf5; --muted:#50506a; --muted2:#8888aa;
+  --nav-h:62px; --radius:16px; --radius-sm:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overscroll-behavior:none;}
+body{
+  background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;
+  max-width:480px;margin:0 auto;position:relative;overflow-x:hidden;
+  padding-bottom:calc(var(--nav-h)+8px);
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 15% 0%,rgba(155,109,255,0.07) 0%,transparent 55%),
+             radial-gradient(ellipse at 85% 100%,rgba(240,165,0,0.05) 0%,transparent 55%);
+  z-index:0;
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 0 0 var(--accent-glow)}60%{box-shadow:0 0 0 12px transparent}}
+@keyframes treasure-bounce{0%,100%{transform:translateY(0) scale(1)}30%{transform:translateY(-18px) scale(1.1)}60%{transform:translateY(-8px) scale(1.05)}}
+@keyframes chest-open{0%{transform:scaleY(1)}50%{transform:scaleY(0.7) translateY(-4px)}100%{transform:scaleY(1)}}
+@keyframes confettiFall{0%{transform:translateY(-30px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(900deg);opacity:0}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes pathGrow{from{stroke-dashoffset:200}to{stroke-dashoffset:0}}
+@keyframes nodeAppear{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes badgeIn{0%{transform:scale(0) rotate(-20deg);opacity:0}60%{transform:scale(1.15) rotate(4deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.fu{animation:fadeUp .38s ease both}
+.fu2{animation:fadeUp .38s .07s ease both}
+.fu3{animation:fadeUp .38s .14s ease both}
+.fu4{animation:fadeUp .38s .21s ease both}
+.fu5{animation:fadeUp .38s .28s ease both}
+
+/* ═══════════════════════════════════════════════
+   SCREENS & NAV
+═══════════════════════════════════════════════ */
+.screen{display:none;padding:18px 15px;position:relative;z-index:1;min-height:calc(100vh - var(--nav-h));}
+.screen.active{display:block;animation:fadeIn .25s ease;}
+
+.bottom-nav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;height:var(--nav-h);
+  background:rgba(13,13,26,0.96);backdrop-filter:blur(24px);
+  border-top:1px solid var(--border);display:flex;align-items:center;
+  z-index:200;padding:0 6px;
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;cursor:pointer;padding:7px 3px;border-radius:12px;
+  transition:all .2s;color:var(--muted);border:none;background:none;position:relative;
+}
+.nav-item.active{color:var(--accent);}
+.nav-icon{font-size:1.25rem;transition:transform .2s;}
+.nav-item.active .nav-icon{transform:scale(1.15);}
+.nav-label{font-family:'Syne',sans-serif;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.nav-badge{position:absolute;top:5px;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:.5rem;width:13px;height:13px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;}
+
+/* ═══════════════════════════════════════════════
+   COMMON COMPONENTS
+═══════════════════════════════════════════════ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:17px;margin-bottom:13px;}
+.card-title{font-family:'Syne',sans-serif;font-size:.63rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:13px;display:flex;align-items:center;justify-content:space-between;}
+
+.btn{background:var(--accent);color:#000;border:none;border-radius:var(--radius-sm);padding:10px 18px;font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+.btn:hover{opacity:.85;transform:translateY(-1px);}
+.btn:active{transform:scale(.97);}
+.btn-sm{padding:7px 13px;font-size:.73rem;}
+.btn-xs{padding:5px 10px;font-size:.68rem;border-radius:7px;}
+.btn-ghost{background:transparent;color:var(--muted2);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);opacity:1;transform:none;}
+.btn-green{background:var(--green);color:#000;}
+.btn-purple{background:var(--purple);color:#fff;}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid var(--red-dim);}
+.btn-full{width:100%;justify-content:center;}
+.btn-icon{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:4px 7px;border-radius:7px;transition:all .15s;}
+.btn-icon:hover{background:var(--surface3);color:var(--text);}
+.btn-icon.red:hover{color:var(--red);}
+
+.form-group{margin-bottom:13px;}
+.form-label{font-size:.68rem;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;display:block;font-family:'Syne',sans-serif;}
+.form-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.86rem;outline:none;transition:border-color .2s;}
+.form-input:focus{border-color:var(--accent);}
+.form-input::placeholder{color:var(--muted);}
+.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;color:var(--text);font-size:.84rem;outline:none;cursor:pointer;}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);z-index:400;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:26px 18px 44px;width:100%;max-width:480px;transform:translateY(50px);transition:transform .3s cubic-bezier(.34,1.2,.64,1);}
+.overlay.open .modal{transform:translateY(0);}
+.modal-handle{width:38px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 20px;}
+.modal h2{font-family:'Syne',sans-serif;font-size:1.05rem;margin-bottom:16px;}
+.overlay.center{align-items:center;}
+.modal-sm{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 18px;width:calc(100% - 30px);max-width:360px;transform:scale(.88);transition:transform .22s;}
+.overlay.center.open .modal-sm{transform:scale(1);}
+
+.badge{font-size:.59rem;padding:3px 8px;border-radius:20px;font-family:'Syne',sans-serif;font-weight:700;text-transform:uppercase;}
+.badge-hot{background:var(--red-dim);color:var(--red);}
+.badge-grow{background:var(--green-dim);color:var(--green);}
+.badge-build{background:var(--accent-dim);color:var(--accent);}
+.badge-purple{background:var(--purple-dim);color:var(--purple);}
+
+.empty-state{text-align:center;padding:30px 14px;color:var(--muted);}
+.empty-state .emo{font-size:2rem;display:block;margin-bottom:9px;}
+.empty-state p{font-size:.83rem;line-height:1.65;}
+
+.confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:999;}
+.confetti-piece{position:absolute;animation:confettiFall linear forwards;border-radius:2px;}
+
+/* ═══════════════════════════════════════════════
+   ONBOARDING
+═══════════════════════════════════════════════ */
+#onboarding{position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+.onb-step{display:none;width:100%;max-width:400px;animation:fadeUp .4s ease;}
+.onb-step.active{display:block;}
+.onb-logo{font-family:'Cinzel',serif;font-size:2.2rem;font-weight:700;color:var(--accent);text-align:center;margin-bottom:6px;text-shadow:0 0 40px var(--accent-glow);}
+.onb-sub{text-align:center;color:var(--muted2);font-size:.84rem;margin-bottom:30px;line-height:1.65;}
+.onb-title{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:6px;}
+.onb-desc{font-size:.81rem;color:var(--muted2);margin-bottom:22px;line-height:1.65;}
+.onb-progress{display:flex;gap:5px;justify-content:center;margin-bottom:28px;}
+.onb-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);transition:all .3s;}
+.onb-dot.active{background:var(--accent);width:22px;border-radius:4px;}
+.activity-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;}
+.activity-btn{background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:11px 7px;text-align:center;cursor:pointer;transition:all .2s;font-size:.76rem;color:var(--muted2);}
+.activity-btn .act-icon{font-size:1.35rem;display:block;margin-bottom:4px;}
+.activity-btn.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--text);}
+.day-selector{display:flex;gap:4px;margin-bottom:14px;}
+.day-btn{flex:1;padding:8px 2px;text-align:center;font-family:'Syne',sans-serif;font-size:.58rem;font-weight:700;border-radius:8px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted2);transition:all .2s;user-select:none;}
+.day-btn.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+.time-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.time-row label{font-size:.75rem;color:var(--muted2);min-width:48px;}
+.time-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:.83rem;outline:none;transition:border-color .2s;}
+.time-input:focus{border-color:var(--accent);}
+
+/* ═══════════════════════════════════════════════
+   HOME
+═══════════════════════════════════════════════ */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;}
+.page-logo{font-size:1.45rem;font-weight:800;letter-spacing:-.5px;line-height:1;font-family:'Syne',sans-serif;}
+.page-logo span{color:var(--accent);}
+.page-sub{font-size:.76rem;color:var(--muted2);margin-top:3px;}
+.date-pill{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 13px;font-size:.72rem;color:var(--muted2);white-space:nowrap;}
+
+.focus-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:17px;margin-bottom:13px;position:relative;overflow:hidden;transition:border-color .3s;}
+.focus-block.has-focus{border-color:rgba(240,165,0,.4);}
+.focus-block::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top right,rgba(240,165,0,.07),transparent 60%);pointer-events:none;}
+.focus-label{font-size:.63rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:10px;font-family:'Syne',sans-serif;}
+.focus-input-row{display:flex;gap:7px;}
+.focus-input-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.86rem;outline:none;transition:border-color .2s;}
+.focus-input-row input:focus{border-color:var(--accent);}
+.focus-input-row input::placeholder{color:var(--muted);}
+.focus-display{display:none;background:var(--accent-dim);border:1px solid rgba(240,165,0,.25);border-radius:var(--radius-sm);padding:13px;margin-top:11px;}
+.focus-display.visible{display:block;animation:fadeUp .3s ease;}
+.focus-display-text{font-family:'Syne',sans-serif;font-size:.98rem;font-weight:700;margin-bottom:9px;line-height:1.4;}
+.focus-actions{display:flex;gap:6px;flex-wrap:wrap;}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:13px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 8px;text-align:center;}
+.stat-num{font-family:'Syne',sans-serif;font-size:1.65rem;font-weight:800;color:var(--accent);display:block;line-height:1;margin-bottom:3px;}
+.stat-label{font-size:.59rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.day-cell{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 2px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.day-cell:hover{border-color:var(--border2);transform:translateY(-1px);}
+.day-cell.today{border-color:var(--accent);background:var(--accent-dim);}
+.day-cell.has-data::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--green);}
+.day-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.54rem;color:var(--muted);margin-bottom:3px;text-transform:uppercase;}
+.day-num{font-size:.9rem;font-weight:500;margin-bottom:4px;}
+.day-icons{display:flex;gap:1px;justify-content:center;min-height:8px;}
+.day-icon{font-size:.5rem;}
+.week-legend{display:flex;gap:9px;margin-top:9px;flex-wrap:wrap;}
+.legend-item{font-size:.63rem;color:var(--muted);display:flex;align-items:center;gap:3px;}
+.legend-dot{width:6px;height:6px;border-radius:50%;}
+
+/* 1% Melhor promo */
+.promo-card{background:linear-gradient(135deg,#0f0900,#1a1000);border:1px solid rgba(240,165,0,.35);border-radius:var(--radius);padding:18px;margin-bottom:13px;position:relative;overflow:hidden;}
+.promo-card::before{content:'';position:absolute;top:-25px;right:-25px;width:100px;height:100px;background:radial-gradient(circle,rgba(240,165,0,.18),transparent 70%);border-radius:50%;}
+.promo-tag{font-size:.6rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:7px;font-family:'Syne',sans-serif;}
+.promo-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold);margin-bottom:5px;line-height:1.2;}
+.promo-desc{font-size:.78rem;color:var(--muted2);margin-bottom:13px;line-height:1.6;}
+.promo-features{display:flex;flex-direction:column;gap:4px;margin-bottom:13px;}
+.promo-feature{font-size:.76rem;color:var(--text);display:flex;align-items:center;gap:5px;}
+.promo-feature::before{content:'✦';color:var(--accent);font-size:.58rem;}
+
+/* ═══════════════════════════════════════════════
+   MAP / QUESTS SCREEN
+═══════════════════════════════════════════════ */
+.science-banner{
+  background:linear-gradient(135deg,var(--purple-dim),var(--blue-dim));
+  border:1px solid rgba(155,109,255,.3);
+  border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px;
+  display:flex;gap:10px;align-items:flex-start;
+}
+.science-icon{font-size:1.4rem;flex-shrink:0;margin-top:1px;}
+.science-text{font-size:.76rem;color:var(--text);line-height:1.55;}
+.science-text strong{color:var(--purple);font-family:'Syne',sans-serif;}
+
+.trail-limit-warning{
+  background:var(--red-dim);border:1px solid rgba(224,92,42,.35);
+  border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px;
+  font-size:.78rem;color:var(--red);line-height:1.5;display:none;
+}
+
+/* Trail card (was path-card) */
+.trail-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0;margin-bottom:13px;overflow:hidden;transition:border-color .2s;}
+.trail-card.completed{border-color:rgba(240,165,0,.4);}
+.trail-header{padding:15px 15px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.trail-icon-wrap{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;}
+.trail-info{flex:1;}
+.trail-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;margin-bottom:2px;}
+.trail-meta{font-size:.7rem;color:var(--muted2);}
+.trail-pct{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;color:var(--accent);}
+.trail-progress-bar{height:3px;background:var(--border);margin:0 15px 0;}
+.trail-progress-fill{height:100%;border-radius:2px;transition:width .5s ease;}
+.trail-body{padding:12px 15px 15px;border-top:1px solid var(--border);}
+.trail-map{
+  background:linear-gradient(135deg,#0a0808,#110f14);
+  border-radius:var(--radius-sm);padding:10px;margin-bottom:12px;
+  position:relative;overflow:hidden;min-height:80px;
+  display:flex;align-items:center;
+}
+.trail-map-svg{width:100%;height:70px;}
+
+/* Checkpoint/task rows */
+.checkpoint-row{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);}
+.checkpoint-row:last-child{border-bottom:none;}
+.cp-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);cursor:pointer;flex-shrink:0;transition:all .22s;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:bold;}
+.cp-check:hover{border-color:var(--green);}
+.cp-check.done{background:var(--green);border-color:var(--green);color:#000;animation:pop .3s ease;}
+.cp-text{flex:1;font-size:.83rem;line-height:1.4;transition:color .2s;}
+.cp-text.done{text-decoration:line-through;color:var(--muted);}
+.cp-actions{display:flex;gap:3px;}
+.add-cp-area{display:flex;gap:7px;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);}
+.add-cp-area input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:.8rem;outline:none;transition:border-color .2s;}
+.add-cp-area input:focus{border-color:var(--accent);}
+.add-cp-area input::placeholder{color:var(--muted);}
+
+/* Completed trail */
+.completed-seal{
+  text-align:center;padding:16px 0;
+}
+.seal-icon{font-size:2.5rem;display:block;animation:treasure-bounce 1s ease infinite;}
+.seal-text{font-family:'Cinzel',serif;color:var(--gold);font-size:.95rem;margin-top:6px;}
+
+/* ═══════════════════════════════════════════════
+   HABITS SCREEN
+═══════════════════════════════════════════════ */
+.habit-item{display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid var(--border);transition:opacity .2s;}
+.habit-item:last-child{border-bottom:none;}
+.habit-icon-wrap{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+.habit-info{flex:1;}
+.habit-name{font-size:.86rem;font-weight:500;}
+.habit-streak{font-size:.68rem;color:var(--muted2);margin-top:2px;}
+.habit-check{width:26px;height:26px;border-radius:8px;border:2px solid var(--border2);cursor:pointer;flex-shrink:0;transition:all .22s;display:flex;align-items:center;justify-content:center;font-size:.8rem;}
+.habit-check:hover{border-color:var(--green);}
+.habit-check.done{background:var(--green);border-color:var(--green);color:#000;animation:pop .3s ease;}
+
+.habit-grid-title{font-family:'Syne',sans-serif;font-size:.63rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin:16px 0 8px;}
+.habit-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.hg-cell{aspect-ratio:1;border-radius:4px;background:var(--border);}
+.hg-cell.done{background:var(--accent);}
+.hg-cell.today{background:var(--green);}
+
+/* ═══════════════════════════════════════════════
+   ACHIEVEMENTS
+═══════════════════════════════════════════════ */
+.achievements-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+.achievement-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:13px 8px;text-align:center;transition:all .2s;}
+.achievement-card.unlocked{border-color:var(--accent);background:var(--accent-dim);}
+.achievement-card.unlocked:hover{transform:translateY(-2px);}
+.ach-icon{font-size:1.8rem;display:block;margin-bottom:6px;filter:grayscale(1);transition:filter .3s;}
+.achievement-card.unlocked .ach-icon{filter:none;animation:badgeIn .5s ease both;}
+.ach-name{font-family:'Syne',sans-serif;font-size:.62rem;font-weight:700;color:var(--muted);}
+.achievement-card.unlocked .ach-name{color:var(--accent);}
+.ach-desc{font-size:.58rem;color:var(--muted);margin-top:3px;line-height:1.4;}
+
+/* ═══════════════════════════════════════════════
+   TIMER SCREEN
+═══════════════════════════════════════════════ */
+.timer-wrap{text-align:center;padding:22px 18px;}
+.timer-ring{position:relative;width:176px;height:176px;margin:0 auto 18px;}
+.timer-ring svg{transform:rotate(-90deg);}
+.timer-ring-bg{fill:none;stroke:var(--border);stroke-width:7;}
+.timer-ring-fill{fill:none;stroke:var(--accent);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .9s linear;}
+.timer-digits{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:2.1rem;font-weight:700;}
+.timer-status{font-size:.78rem;color:var(--muted2);margin-bottom:18px;}
+.timer-btns{display:flex;gap:7px;justify-content:center;margin-bottom:18px;}
+.timer-modes{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;}
+.timer-mode-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted2);border-radius:20px;padding:6px 13px;font-size:.71rem;cursor:pointer;transition:all .2s;font-family:'Syne',sans-serif;font-weight:600;}
+.timer-mode-btn:hover,.timer-mode-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+.streak-dots{display:flex;gap:4px;flex-wrap:wrap;margin-top:9px;}
+.streak-dot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:all .2s;}
+.streak-dot.done{background:var(--accent);}
+.streak-dot.today{background:var(--green);box-shadow:0 0 7px rgba(62,207,142,.5);}
+
+/* ═══════════════════════════════════════════════
+   PROFILE SCREEN
+═══════════════════════════════════════════════ */
+.profile-hero{text-align:center;padding:20px 18px;margin-bottom:13px;}
+.profile-avatar-wrap{position:relative;display:inline-block;margin-bottom:12px;}
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--accent));display:flex;align-items:center;justify-content:center;font-size:1.7rem;box-shadow:0 0 24px rgba(155,109,255,.3);}
+.profile-level{position:absolute;bottom:-4px;right:-4px;background:var(--accent);color:#000;font-family:'Syne',sans-serif;font-size:.58rem;font-weight:800;padding:2px 6px;border-radius:8px;}
+.profile-name{font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:800;margin-bottom:4px;}
+.profile-mission{font-size:.8rem;color:var(--muted2);line-height:1.55;margin-bottom:8px;}
+.xp-bar{height:4px;background:var(--border);border-radius:2px;margin:8px 0 4px;}
+.xp-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--purple),var(--accent));transition:width .6s ease;}
+.xp-label{font-size:.62rem;color:var(--muted);text-align:right;}
+.settings-item{display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:opacity .2s;}
+.settings-item:last-child{border-bottom:none;}
+.settings-item:hover{opacity:.7;}
+.settings-icon-wrap{width:34px;height:34px;border-radius:9px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;}
+.settings-label{font-size:.86rem;font-weight:500;flex:1;}
+.settings-val{font-size:.72rem;color:var(--muted);margin-top:2px;}
+.settings-arrow{color:var(--muted);font-size:.8rem;}
+
+/* toggle */
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--border2);border-radius:11px;cursor:pointer;transition:.3s;}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle input:checked+.toggle-slider{background:var(--accent);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px);}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-label{font-size:.84rem;}
+.toggle-sub{font-size:.7rem;color:var(--muted2);margin-top:2px;}
+
+/* ═══════════════════════════════════════════════
+   TREASURE CELEBRATION
+═══════════════════════════════════════════════ */
+#treasureOverlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(10px);
+  z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .3s;padding:24px;
+}
+#treasureOverlay.open{opacity:1;pointer-events:all;}
+.treasure-chest{font-size:5rem;text-align:center;margin-bottom:12px;animation:treasure-bounce .8s ease infinite;}
+.treasure-title{font-family:'Cinzel',serif;font-size:1.6rem;color:var(--gold);text-align:center;margin-bottom:6px;text-shadow:0 0 30px rgba(255,215,0,.5);}
+.treasure-sub{font-size:.85rem;color:var(--muted2);text-align:center;margin-bottom:24px;line-height:1.6;}
+.treasure-badge{display:inline-block;background:var(--accent-dim);border:1px solid var(--accent);border-radius:12px;padding:10px 20px;font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;color:var(--accent);margin-bottom:24px;animation:badgeIn .6s .3s ease both;}
+
+/* history modal */
+.h-section-title{font-family:'Syne',sans-serif;font-size:.72rem;color:var(--muted);margin:10px 0 5px;}
+.history-focus-box{background:var(--accent-dim);border:1px solid rgba(240,165,0,.2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:13px;font-size:.8rem;}
+.history-focus-label{font-size:.62rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;font-family:'Syne',sans-serif;}
+.history-task{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.8rem;}
+.history-task:last-child{border-bottom:none;}
+.history-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.history-dot.done{background:var(--green);}
+.history-dot.pend{background:var(--border2);}
+
+/* icon picker */
+.icon-picker{display:flex;gap:7px;flex-wrap:wrap;}
+.ip-btn{font-size:1.4rem;cursor:pointer;padding:6px;border-radius:8px;border:2px solid transparent;transition:all .15s;}
+.ip-btn.sel{border-color:var(--accent);background:var(--accent-dim);}
+.color-picker{display:flex;gap:8px;}
+.cp-btn{width:27px;height:27px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s;}
+.cp-btn.sel{border-color:#fff;}
+
+.mt-8{margin-top:8px;} .mt-12{margin-top:12px;} .mb-13{margin-bottom:13px;}
+.flex{display:flex;} .flex-between{display:flex;justify-content:space-between;align-items:center;}
+.gap-7{gap:7px;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+   ONBOARDING
+═══════════════════════════════════════════ -->
+<div id="onboarding">
+  <div class="onb-step active" id="onb-0">
+    <div class="onb-logo">⚔ FocoQuest</div>
+    <div class="onb-sub">Produtividade com propósito.<br>Cada trilha é uma missão a conquistar.</div>
+    <div class="onb-progress"><div class="onb-dot active"></div><div class="onb-dot"></div><div class="onb-dot"></div><div class="onb-dot"></div></div>
+    <button class="btn btn-full" onclick="nextOnb(1)" style="font-size:.9rem;padding:13px">⚔ Iniciar Jornada</button>
+  </div>
+  <div class="onb-step" id="onb-1">
+    <div class="onb-title">Quem é você, aventureiro?</div>
+    <div class="onb-desc">Essas informações personalizam toda a sua experiência.</div>
+    <div class="onb-progress"><div class="onb-dot"></div><div class="onb-dot active"></div><div class="onb-dot"></div><div class="onb-dot"></div></div>
+    <div class="form-group"><label class="form-label">Seu nome</label><input type="text" id="onb-name" class="form-input" placeholder="Ex: João Silva"></div>
+    <div class="form-group"><label class="form-label">Sua missão de vida</label><input type="text" id="onb-mission" class="form-input" placeholder="Ex: Construir negócios com propósito"></div>
+    <div class="form-group"><label class="form-label">Maior foco agora</label><input type="text" id="onb-focus" class="form-input" placeholder="Ex: Lançar meu SaaS bíblico"></div>
+    <button class="btn btn-full" onclick="nextOnb(2)">Continuar →</button>
+  </div>
+  <div class="onb-step" id="onb-2">
+    <div class="onb-title">Quando você trabalha?</div>
+    <div class="onb-desc">Seu calendário será montado automaticamente.</div>
+    <div class="onb-progress"><div class="onb-dot"></div><div class="onb-dot"></div><div class="onb-dot active"></div><div class="onb-dot"></div></div>
+    <label class="form-label">Dias de trabalho</label>
+    <div class="day-selector" id="work-days">
+      <div class="day-btn selected" data-day="0">Seg</div><div class="day-btn selected" data-day="1">Ter</div><div class="day-btn selected" data-day="2">Qua</div><div class="day-btn selected" data-day="3">Qui</div><div class="day-btn selected" data-day="4">Sex</div><div class="day-btn" data-day="5">Sáb</div><div class="day-btn" data-day="6">Dom</div>
+    </div>
+    <label class="form-label">Horário manhã</label>
+    <div class="time-row"><label>De</label><input type="time" class="time-input" id="w-sam" value="08:00"><label style="text-align:center">até</label><input type="time" class="time-input" id="w-eam" value="12:00"></div>
+    <label class="form-label" style="margin-top:10px">Horário tarde</label>
+    <div class="time-row"><label>De</label><input type="time" class="time-input" id="w-spm" value="14:00"><label style="text-align:center">até</label><input type="time" class="time-input" id="w-epm" value="18:00"></div>
+    <button class="btn btn-full" style="margin-top:18px" onclick="nextOnb(3)">Continuar →</button>
+  </div>
+  <div class="onb-step" id="onb-3">
+    <div class="onb-title">Suas atividades fixas</div>
+    <div class="onb-desc">Aparecerão no seu calendário semanal.</div>
+    <div class="onb-progress"><div class="onb-dot"></div><div class="onb-dot"></div><div class="onb-dot"></div><div class="onb-dot active"></div></div>
+    <div class="activity-grid" id="onb-act-grid">
+      <div class="activity-btn" data-act="church" onclick="toggleAct(this)"><span class="act-icon">⛪</span>Igreja</div>
+      <div class="activity-btn" data-act="sport" onclick="toggleAct(this)"><span class="act-icon">🏃</span>Esporte</div>
+      <div class="activity-btn" data-act="gym" onclick="toggleAct(this)"><span class="act-icon">💪</span>Academia</div>
+      <div class="activity-btn" data-act="meditation" onclick="toggleAct(this)"><span class="act-icon">🧘</span>Meditação</div>
+      <div class="activity-btn" data-act="study" onclick="toggleAct(this)"><span class="act-icon">📚</span>Estudo</div>
+      <div class="activity-btn" data-act="family" onclick="toggleAct(this)"><span class="act-icon">👨‍👩‍👧</span>Família</div>
+    </div>
+    <button class="btn btn-full" style="margin-top:8px" onclick="finishOnboarding()">🚀 Entrar no FocoQuest!</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+   HOME
+═══════════════════════════════════════════ -->
+<div class="screen active" id="screen-home">
+  <div class="page-header fu"><div><div class="page-logo">Foco<span>Quest</span></div><div class="page-sub" id="home-greet"></div></div><div class="date-pill" id="home-date"></div></div>
+
+  <div class="focus-block fu2" id="focusBlock">
+    <div class="focus-label">⚡ Foco do Dia — 1 coisa só</div>
+    <div class="focus-input-row" id="focusInputRow">
+      <input type="text" id="focusInput" placeholder="O que você vai concluir hoje?" onkeydown="if(event.key==='Enter')setFocus()">
+      <button class="btn btn-sm" onclick="setFocus()">Definir</button>
+    </div>
+    <div class="focus-display" id="focusDisplay">
+      <div class="focus-display-text" id="focusDisplayText"></div>
+      <div class="focus-actions">
+        <button class="btn btn-xs btn-green" onclick="completeFocus()">✓ Concluí!</button>
+        <button class="btn btn-xs btn-ghost" onclick="editFocus()">✎ Editar</button>
+        <button class="btn btn-xs btn-danger" onclick="clearFocus()">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-row fu3">
+    <div class="stat-card"><span class="stat-num" id="statDone">0</span><span class="stat-label">Hoje</span></div>
+    <div class="stat-card"><span class="stat-num" id="statStreak">0</span><span class="stat-label">Sequência</span></div>
+    <div class="stat-card"><span class="stat-num" id="statXP">0</span><span class="stat-label">XP total</span></div>
+  </div>
+
+  <div class="card fu4">
+    <div class="card-title">📅 Semana — toque para ver histórico</div>
+    <div class="week-grid" id="weekGrid"></div>
+    <div class="week-legend" id="weekLegend"></div>
+  </div>
+
+  <div class="promo-card fu5">
+    <div class="promo-tag">✦ Biblioteca Parceira</div>
+    <div class="promo-title">1% Melhor</div>
+    <div class="promo-desc">Biblioteca de transformação pessoal com e-books, guias e ferramentas para evoluir 1% a cada dia.</div>
+    <div class="promo-features">
+      <div class="promo-feature">Biblioteca completa de e-books</div>
+      <div class="promo-feature">Trilhas de desenvolvimento pessoal</div>
+      <div class="promo-feature">Conteúdo bíblico e espiritual</div>
+    </div>
+    <button class="btn btn-full" onclick="window.open('https://1porcento-melhor.vercel.app/','_blank')" style="background:linear-gradient(135deg,#f0a500,#e05c2a)">✦ Conhecer a Biblioteca</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+   MAP / QUESTS
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-map">
+  <div class="page-header fu"><div><div class="page-logo" style="font-size:1.3rem">Foco<span>Quest</span></div><div class="page-sub">Trilhas de Conquista</div></div></div>
+
+  <div class="science-banner fu2">
+    <div class="science-icon">🧠</div>
+    <div class="science-text">
+      <strong>Ciência do Foco:</strong> Pesquisadores da Universidade de Stanford descobriram que apenas 2,5% das pessoas conseguem realmente multitarefar. Para todos os outros, alternar entre projetos reduz a produtividade em até 40%. <strong>Recomendação: máx. 3 trilhas ativas. Termine uma antes de começar outra.</strong>
+    </div>
+  </div>
+
+  <div class="trail-limit-warning fu2" id="trailLimitWarning">
+    ⚠️ Você já tem 3 trilhas ativas. A ciência recomenda focar em poucas coisas de cada vez. Conclua uma trilha antes de iniciar uma nova!
+  </div>
+
+  <div id="trailsList"></div>
+
+  <button class="btn btn-ghost btn-full mt-8" id="addTrailBtn" onclick="openAddTrail()">+ Nova Trilha</button>
+</div>
+
+<!-- ═══════════════════════════════════════════
+   HABITS
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-habits">
+  <div class="page-header fu"><div><div class="page-logo" style="font-size:1.3rem">Foco<span>Quest</span></div><div class="page-sub">Hábitos Diários</div></div>
+  <div style="font-size:.72rem;color:var(--muted2);text-align:right" id="habits-date"></div></div>
+
+  <div class="card fu2">
+    <div class="card-title">⚡ Hoje<span style="color:var(--muted2);font-size:.65rem;font-weight:400" id="habits-progress-label"></span></div>
+    <div id="habitsList"></div>
+    <div class="flex-between mt-8">
+      <span style="font-size:.7rem;color:var(--muted)">Adicionar hábito personalizado</span>
+      <button class="btn btn-xs btn-ghost" onclick="openAddHabit()">+</button>
+    </div>
+  </div>
+
+  <div class="card fu3">
+    <div class="card-title">🏆 Conquistas</div>
+    <div class="achievements-grid" id="achievementsList"></div>
+  </div>
+
+  <div class="card fu4">
+    <div class="card-title">📊 Histórico — 28 dias</div>
+    <div class="habit-grid" id="habitHistoryGrid"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+   TIMER
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-timer">
+  <div class="page-header fu"><div><div class="page-logo" style="font-size:1.3rem">Foco<span>Quest</span></div><div class="page-sub">Timer de Foco</div></div></div>
+  <div class="card timer-wrap fu2">
+    <div class="timer-ring">
+      <svg viewBox="0 0 176 176" width="176" height="176">
+        <circle class="timer-ring-bg" cx="88" cy="88" r="80"/>
+        <circle class="timer-ring-fill" id="timerRingFill" cx="88" cy="88" r="80" stroke-dasharray="502" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-digits" id="timerDisplay">25:00</div>
+    </div>
+    <div class="timer-status" id="timerStatus">Pronto para começar</div>
+    <div class="timer-btns">
+      <button class="btn" onclick="startTimer()">▶ Iniciar</button>
+      <button class="btn btn-ghost" onclick="pauseTimer()">⏸</button>
+      <button class="btn btn-ghost" onclick="resetTimer()">↺</button>
+    </div>
+    <div class="timer-modes" style="margin-top:14px">
+      <button class="timer-mode-btn active" onclick="setTimerMode(25,'Foco 25 min',this)">25 min</button>
+      <button class="timer-mode-btn" onclick="setTimerMode(50,'Foco 50 min',this)">50 min</button>
+      <button class="timer-mode-btn" onclick="setTimerMode(5,'Pausa curta',this)">Pausa 5</button>
+      <button class="timer-mode-btn" onclick="setTimerMode(15,'Pausa longa',this)">Pausa 15</button>
+    </div>
+  </div>
+  <div class="card fu3">
+    <div class="card-title">🔥 Sequência — 30 dias</div>
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">Dias com ao menos 1 checkpoint concluído</div>
+    <div class="streak-dots" id="streakDots"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+   PROFILE
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-profile">
+  <div class="card profile-hero fu">
+    <div class="profile-avatar-wrap">
+      <div class="profile-avatar" id="profileAvatar">🧙</div>
+      <div class="profile-level" id="profileLevel">Nv.1</div>
+    </div>
+    <div class="profile-name" id="profileName">Aventureiro</div>
+    <div class="profile-mission" id="profileMission">Sem missão definida</div>
+    <span class="badge badge-purple" id="profileFocusBadge"></span>
+    <div class="xp-bar mt-8"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+    <div class="xp-label" id="xpLabel">0 XP</div>
+  </div>
+  <div class="card fu2">
+    <div class="card-title">⚙ Configurações</div>
+    <div class="settings-item" onclick="openEditProfile()"><div class="settings-icon-wrap">👤</div><div style="flex:1"><div class="settings-label">Editar Perfil</div><div class="settings-val">Nome, missão, foco</div></div><span class="settings-arrow">›</span></div>
+    <div class="settings-item" onclick="openScheduleModal()"><div class="settings-icon-wrap">📅</div><div style="flex:1"><div class="settings-label">Horários de Trabalho</div><div class="settings-val" id="settingSchedVal">—</div></div><span class="settings-arrow">›</span></div>
+    <div class="settings-item" onclick="openActivitiesModal()"><div class="settings-icon-wrap">🏃</div><div style="flex:1"><div class="settings-label">Atividades Fixas</div><div class="settings-val" id="settingActVal">—</div></div><span class="settings-arrow">›</span></div>
+    <div class="settings-item" onclick="openModal('modalNotif')"><div class="settings-icon-wrap">🔔</div><div style="flex:1"><div class="settings-label">Notificações</div><div class="settings-val" id="settingNotifVal">Desativadas</div></div><span class="settings-arrow">›</span></div>
+    <div class="settings-item" onclick="if(confirm('Resetar todos os dados?')){localStorage.clear();location.reload();}"><div class="settings-icon-wrap">🗑</div><div style="flex:1"><div class="settings-label" style="color:var(--red)">Resetar App</div><div class="settings-val">Apaga tudo</div></div><span class="settings-arrow">›</span></div>
+  </div>
+  <div class="card fu3" style="text-align:center;padding:13px"><div style="font-size:.68rem;color:var(--muted)">FocoQuest v2.0 — Feito com ⚔ para quem tem missão</div></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="goScreen('home')" id="nav-home"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+  <button class="nav-item" onclick="goScreen('map')" id="nav-map"><span class="nav-icon">🗺️</span><span class="nav-label">Trilhas</span></button>
+  <button class="nav-item" onclick="goScreen('habits')" id="nav-habits"><span class="nav-icon">🌟</span><span class="nav-label">Hábitos</span><span class="nav-badge" id="navBadgeHabits" style="display:none">!</span></button>
+  <button class="nav-item" onclick="goScreen('timer')" id="nav-timer"><span class="nav-icon">⏱️</span><span class="nav-label">Timer</span></button>
+  <button class="nav-item" onclick="goScreen('profile')" id="nav-profile"><span class="nav-icon">👤</span><span class="nav-label">Perfil</span></button>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+   MODALS
+═══════════════════════════════════════════ -->
+<!-- Day History -->
+<div class="overlay" id="modalDay"><div class="modal"><div class="modal-handle"></div><h2 id="modalDayTitle"></h2><div id="modalDayContent"></div><button class="btn btn-ghost btn-full" style="margin-top:14px" onclick="closeModal('modalDay')">Fechar</button></div></div>
+
+<!-- Add Trail -->
+<div class="overlay" id="modalAddTrail">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="modalTrailTitle">Nova Trilha</h2>
+    <div class="form-group"><label class="form-label">Nome da trilha</label><input type="text" id="trail-name" class="form-input" placeholder="Ex: SaaS Bíblico"></div>
+    <div class="form-group"><label class="form-label">Ícone</label>
+      <div class="icon-picker" id="iconPicker">
+        <span class="ip-btn sel" data-icon="⚔" onclick="selIcon(this,'⚔')">⚔</span>
+        <span class="ip-btn" data-icon="💊" onclick="selIcon(this,'💊')">💊</span>
+        <span class="ip-btn" data-icon="📱" onclick="selIcon(this,'📱')">📱</span>
+        <span class="ip-btn" data-icon="📖" onclick="selIcon(this,'📖')">📖</span>
+        <span class="ip-btn" data-icon="🌐" onclick="selIcon(this,'🌐')">🌐</span>
+        <span class="ip-btn" data-icon="🎯" onclick="selIcon(this,'🎯')">🎯</span>
+        <span class="ip-btn" data-icon="🚀" onclick="selIcon(this,'🚀')">🚀</span>
+        <span class="ip-btn" data-icon="💡" onclick="selIcon(this,'💡')">💡</span>
+        <span class="ip-btn" data-icon="💪" onclick="selIcon(this,'💪')">💪</span>
+        <span class="ip-btn" data-icon="🔥" onclick="selIcon(this,'🔥')">🔥</span>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Cor</label>
+      <div class="color-picker" id="colorPicker">
+        <div class="cp-btn sel" style="background:#f0a500" onclick="selColor(this,'#f0a500')"></div>
+        <div class="cp-btn" style="background:#3ecf8e" onclick="selColor(this,'#3ecf8e')"></div>
+        <div class="cp-btn" style="background:#9b6dff" onclick="selColor(this,'#9b6dff')"></div>
+        <div class="cp-btn" style="background:#4a9eff" onclick="selColor(this,'#4a9eff')"></div>
+        <div class="cp-btn" style="background:#e05c2a" onclick="selColor(this,'#e05c2a')"></div>
+        <div class="cp-btn" style="background:#ff6b9d" onclick="selColor(this,'#ff6b9d')"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:7px;margin-top:4px">
+      <button class="btn" onclick="saveTrail()" style="flex:1">Salvar</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalAddTrail')" style="flex:1">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Habit -->
+<div class="overlay" id="modalAddHabit">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Novo Hábito</h2>
+    <div class="form-group"><label class="form-label">Nome</label><input type="text" id="habit-name-input" class="form-input" placeholder="Ex: Beber 2L de água"></div>
+    <div class="form-group"><label class="form-label">Ícone</label>
+      <div class="icon-picker" id="habitIconPicker">
+        <span class="ip-btn sel" data-icon="⭐" onclick="selHabitIcon(this,'⭐')">⭐</span>
+        <span class="ip-btn" data-icon="💧" onclick="selHabitIcon(this,'💧')">💧</span>
+        <span class="ip-btn" data-icon="📖" onclick="selHabitIcon(this,'📖')">📖</span>
+        <span class="ip-btn" data-icon="🏃" onclick="selHabitIcon(this,'🏃')">🏃</span>
+        <span class="ip-btn" data-icon="🙏" onclick="selHabitIcon(this,'🙏')">🙏</span>
+        <span class="ip-btn" data-icon="🧘" onclick="selHabitIcon(this,'🧘')">🧘</span>
+        <span class="ip-btn" data-icon="🥗" onclick="selHabitIcon(this,'🥗')">🥗</span>
+        <span class="ip-btn" data-icon="💊" onclick="selHabitIcon(this,'💊')">💊</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:7px;margin-top:4px">
+      <button class="btn" onclick="saveHabit()" style="flex:1">Salvar</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalAddHabit')" style="flex:1">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Profile -->
+<div class="overlay" id="modalEditProfile"><div class="modal"><div class="modal-handle"></div><h2>Editar Perfil</h2>
+  <div class="form-group"><label class="form-label">Nome</label><input type="text" id="ep-name" class="form-input"></div>
+  <div class="form-group"><label class="form-label">Missão de vida</label><input type="text" id="ep-mission" class="form-input"></div>
+  <div class="form-group"><label class="form-label">Foco atual</label><input type="text" id="ep-focus" class="form-input"></div>
+  <div style="display:flex;gap:7px"><button class="btn" onclick="saveProfile()" style="flex:1">Salvar</button><button class="btn btn-ghost" onclick="closeModal('modalEditProfile')" style="flex:1">Cancelar</button></div>
+</div></div>
+
+<!-- Schedule -->
+<div class="overlay" id="modalSchedule"><div class="modal"><div class="modal-handle"></div><h2>Horários de Trabalho</h2>
+  <label class="form-label">Dias</label>
+  <div class="day-selector" id="sched-days"><div class="day-btn" data-day="0">Seg</div><div class="day-btn" data-day="1">Ter</div><div class="day-btn" data-day="2">Qua</div><div class="day-btn" data-day="3">Qui</div><div class="day-btn" data-day="4">Sex</div><div class="day-btn" data-day="5">Sáb</div><div class="day-btn" data-day="6">Dom</div></div>
+  <label class="form-label">Manhã</label>
+  <div class="time-row"><label>De</label><input type="time" class="time-input" id="ss-am1" value="08:00"><label style="text-align:center">até</label><input type="time" class="time-input" id="ss-am2" value="12:00"></div>
+  <label class="form-label" style="margin-top:10px">Tarde</label>
+  <div class="time-row"><label>De</label><input type="time" class="time-input" id="ss-pm1" value="14:00"><label style="text-align:center">até</label><input type="time" class="time-input" id="ss-pm2" value="18:00"></div>
+  <div style="display:flex;gap:7px;margin-top:18px"><button class="btn" onclick="saveSchedule()" style="flex:1">Salvar</button><button class="btn btn-ghost" onclick="closeModal('modalSchedule')" style="flex:1">Cancelar</button></div>
+</div></div>
+
+<!-- Activities -->
+<div class="overlay" id="modalActivities"><div class="modal"><div class="modal-handle"></div><h2>Atividades Fixas</h2>
+  <div class="activity-grid" id="act-modal-grid">
+    <div class="activity-btn" data-act="church" onclick="this.classList.toggle('selected')"><span class="act-icon">⛪</span>Igreja</div>
+    <div class="activity-btn" data-act="sport" onclick="this.classList.toggle('selected')"><span class="act-icon">🏃</span>Esporte</div>
+    <div class="activity-btn" data-act="gym" onclick="this.classList.toggle('selected')"><span class="act-icon">💪</span>Academia</div>
+    <div class="activity-btn" data-act="meditation" onclick="this.classList.toggle('selected')"><span class="act-icon">🧘</span>Meditação</div>
+    <div class="activity-btn" data-act="study" onclick="this.classList.toggle('selected')"><span class="act-icon">📚</span>Estudo</div>
+    <div class="activity-btn" data-act="family" onclick="this.classList.toggle('selected')"><span class="act-icon">👨‍👩‍👧</span>Família</div>
+  </div>
+  <div style="display:flex;gap:7px;margin-top:12px"><button class="btn" onclick="saveActivities()" style="flex:1">Salvar</button><button class="btn btn-ghost" onclick="closeModal('modalActivities')" style="flex:1">Cancelar</button></div>
+</div></div>
+
+<!-- Notifications -->
+<div class="overlay" id="modalNotif"><div class="modal"><div class="modal-handle"></div><h2>Notificações</h2>
+  <div class="toggle-row"><div><div class="toggle-label">Lembrete do foco do dia</div><div class="toggle-sub">Avisa quando você não definiu seu foco</div></div><label class="toggle"><input type="checkbox" id="notif-focus" onchange="saveNotif()"><span class="toggle-slider"></span></label></div>
+  <div class="toggle-row"><div><div class="toggle-label">Lembrete noturno</div><div class="toggle-sub">Registre suas conquistas do dia</div></div><label class="toggle"><input type="checkbox" id="notif-night" onchange="saveNotif()"><span class="toggle-slider"></span></label></div>
+  <div class="form-group" style="margin-top:12px"><label class="form-label">Horário do lembrete</label><input type="time" id="notif-time" class="form-input" value="21:00" onchange="saveNotif()"></div>
+  <button class="btn btn-ghost btn-full" onclick="closeModal('modalNotif')">Fechar</button>
+</div></div>
+
+<!-- Confirm delete -->
+<div class="overlay center" id="modalConfirm"><div class="modal-sm">
+  <h2 style="font-size:1rem;margin-bottom:7px" id="confirmTitle">Confirmar</h2>
+  <p style="font-size:.83rem;color:var(--muted2);margin-bottom:16px;line-height:1.5" id="confirmText"></p>
+  <div style="display:flex;gap:7px"><button class="btn btn-danger" onclick="doConfirm()" style="flex:1">Confirmar</button><button class="btn btn-ghost" onclick="closeModal('modalConfirm')" style="flex:1">Cancelar</button></div>
+</div></div>
+
+<!-- Treasure Overlay -->
+<div id="treasureOverlay">
+  <div class="treasure-chest" id="treasureEmoji">🏆</div>
+  <div class="treasure-title" id="treasureTitle">Trilha Conquistada!</div>
+  <div class="treasure-sub" id="treasureSub">Você completou todos os checkpoints!</div>
+  <div class="treasure-badge" id="treasureBadge">⚔ Conquistador</div>
+  <button class="btn btn-green" onclick="closeTreasure()">🎉 Continuar</button>
+</div>
+
+<div class="confetti-wrap" id="confettiWrap"></div>
+
+<script>
+// ════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════
+const DAY_NAMES=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const DAY_FULL=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+const MN=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const ACT_ICONS={church:'⛪',sport:'🏃',gym:'💪',meditation:'🧘',study:'📚',family:'👨‍👩‍👧'};
+const ACT_COLORS={church:'#9b6dff',sport:'#3ecf8e',gym:'#3ecf8e',meditation:'#4a9eff',study:'#f0a500',family:'#ff6b9d'};
+const CIRC=502;
+
+const ACHIEVEMENTS=[
+  {id:'first_cp',icon:'⚔',name:'Primeiro Passo',desc:'Complete 1 checkpoint',xp:10,check:D=>D.trails.some(t=>t.checkpoints.some(c=>c.done))},
+  {id:'first_trail',icon:'🏆',name:'Conquistador',desc:'Complete uma trilha',xp:100,check:D=>D.trails.some(t=>t.checkpoints.length>0&&t.checkpoints.every(c=>c.done))},
+  {id:'three_trails',icon:'💎',name:'Mestre do Foco',desc:'Complete 3 trilhas',xp:300,check:D=>D.trails.filter(t=>t.checkpoints.length>0&&t.checkpoints.every(c=>c.done)).length>=3},
+  {id:'week_streak',icon:'🔥',name:'Semana Lendária',desc:'7 dias consecutivos',xp:70,check:D=>calcStreak(D)>=7},
+  {id:'month_streak',icon:'🌟',name:'Monge Digital',desc:'30 dias consecutivos',xp:300,check:D=>calcStreak(D)>=30},
+  {id:'habit_7',icon:'💪',name:'Consistente',desc:'7 dias de hábitos',xp:50,check:D=>Object.keys(D.habitLog).length>=7},
+  {id:'ten_cps',icon:'🎯',name:'Focado',desc:'Complete 10 checkpoints',xp:50,check:D=>{let n=0;D.trails.forEach(t=>t.checkpoints.forEach(c=>{if(c.done)n++;}));return n>=10;}},
+];
+
+function todayKey(){return new Date().toISOString().split('T')[0];}
+
+// ════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════
+let D=JSON.parse(localStorage.getItem('fq_v2')||'null')||{
+  profile:null,
+  trails:[
+    {id:1,name:'Suplementos + Rick',icon:'💊',color:'#e05c2a',expanded:true,checkpoints:[
+      {id:11,text:'Criar estrutura do site',done:false},{id:12,text:'Escrever e-book',done:false},{id:13,text:'Subir tráfego pago',done:false},
+    ]},
+    {id:2,name:'Redes Sociais',icon:'📱',color:'#3ecf8e',expanded:false,checkpoints:[
+      {id:21,text:'Agendar posts da semana',done:false},{id:22,text:'Criar 3 reels',done:false},
+    ]},
+    {id:3,name:'SaaS Bíblico',icon:'📖',color:'#9b6dff',expanded:false,checkpoints:[
+      {id:31,text:'Definir MVP',done:false},{id:32,text:'Criar wireframe',done:false},
+    ]},
+  ],
+  habits:[
+    {id:1,name:'Bíblia / Devocional',icon:'📖',color:'#9b6dff'},
+    {id:2,name:'Exercício físico',icon:'🏃',color:'#3ecf8e'},
+    {id:3,name:'Leitura / Estudo',icon:'📚',color:'#f0a500'},
+  ],
+  habitLog:{},  // {date: [habitId, ...]}
+  focusByDate:{},
+  unlockedAch:[],
+  xp:0,
+  nextId:200,
+};
+
+function save(){
+  localStorage.setItem('fq_v2',JSON.stringify(D));
+  updateStats();updateNavBadges();checkAchievements();
+}
+
+function calcStreak(data){
+  let s=0;const now=new Date();
+  for(let i=0;i<90;i++){
+    const d=new Date(now);d.setDate(now.getDate()-i);
+    const k=d.toISOString().split('T')[0];
+    const hasCp=data.trails.some(t=>t.checkpoints.some(c=>c.done&&c.doneDate===k));
+    const hasHabit=data.habitLog[k]&&data.habitLog[k].length>0;
+    if(hasCp||hasHabit)s++;else if(i>0)break;
+  }
+  return s;
+}
+
+// ════════════════════════════════════════════
+// ONBOARDING
+// ════════════════════════════════════════════
+let onbStep=0,onbWorkDays=[0,1,2,3,4];
+function nextOnb(step){
+  if(step===2&&!document.getElementById('onb-name').value.trim()){alert('Informe seu nome!');return;}
+  document.getElementById(`onb-${onbStep}`).classList.remove('active');
+  onbStep=step;
+  document.getElementById(`onb-${step}`).classList.add('active');
+  if(step===2)initOnbWorkDays();
+}
+function initOnbWorkDays(){
+  document.querySelectorAll('#work-days .day-btn').forEach(btn=>{
+    const d=parseInt(btn.dataset.day);
+    btn.classList.toggle('selected',onbWorkDays.includes(d));
+    btn.onclick=()=>{btn.classList.toggle('selected');const i=onbWorkDays.indexOf(d);i>-1?onbWorkDays.splice(i,1):onbWorkDays.push(d);};
+  });
+}
+function toggleAct(btn){btn.classList.toggle('selected');}
+function finishOnboarding(){
+  const acts={};
+  document.querySelectorAll('#onb-act-grid .activity-btn.selected').forEach(b=>{acts[b.dataset.act]={days:[]};});
+  // Add habits from activities
+  const actHabits={church:{name:'Igreja / Culto',icon:'⛪',color:'#9b6dff'},sport:{name:'Esporte / Corrida',icon:'🏃',color:'#3ecf8e'},gym:{name:'Academia',icon:'💪',color:'#3ecf8e'},meditation:{name:'Meditação',icon:'🧘',color:'#4a9eff'},family:{name:'Tempo em família',icon:'👨‍👩‍👧',color:'#ff6b9d'}};
+  Object.keys(acts).forEach(a=>{if(actHabits[a]&&!D.habits.find(h=>h.name===actHabits[a].name)){D.habits.push({id:++D.nextId,...actHabits[a]});}});
+  D.profile={
+    name:document.getElementById('onb-name').value.trim()||'Aventureiro',
+    mission:document.getElementById('onb-mission').value.trim(),
+    focus:document.getElementById('onb-focus').value.trim(),
+    workDays:onbWorkDays,
+    workAM:[document.getElementById('w-sam').value,document.getElementById('w-eam').value],
+    workPM:[document.getElementById('w-spm').value,document.getElementById('w-epm').value],
+    activities:acts,
+    notif:{focus:false,night:false,time:'21:00'},
+  };
+  save();document.getElementById('onboarding').style.display='none';initApp();
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+function initApp(){
+  if(!D.profile){document.getElementById('onboarding').style.display='flex';return;}
+  document.getElementById('onboarding').style.display='none';
+  initHeader();loadFocus();buildWeek();renderProfile();renderTrails();renderHabits();renderAchievements();updateStats();updateNavBadges();checkNotifBanner();
+}
+
+// ════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════
+let curScreen='home';
+function goScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+  document.getElementById(`nav-${name}`).classList.add('active');
+  curScreen=name;
+  if(name==='timer')updateStreak();
+  if(name==='habits'){renderHabits();renderAchievements();renderHabitHistory();}
+  if(name==='map')renderTrails();
+}
+
+// ════════════════════════════════════════════
+// HEADER
+// ════════════════════════════════════════════
+function initHeader(){
+  const now=new Date(),h=now.getHours(),name=D.profile?.name||'Aventureiro';
+  const gr=h<12?'☀️ Bom dia':h<18?'🌤 Boa tarde':'🌙 Boa noite';
+  document.getElementById('home-greet').textContent=`${gr}, ${name}!`;
+  const dow=now.getDay()===0?6:now.getDay()-1;
+  document.getElementById('home-date').textContent=`${DAY_FULL[dow]}, ${now.getDate()} ${MN[now.getMonth()]}`;
+  document.getElementById('habits-date').textContent=`${now.getDate()} ${MN[now.getMonth()]}`;
+}
+
+// ════════════════════════════════════════════
+// FOCUS
+// ════════════════════════════════════════════
+function loadFocus(){const f=D.focusByDate[todayKey()];if(f?.text)showFocusDisplay(f.text,f.done);}
+function setFocus(){
+  const v=document.getElementById('focusInput').value.trim();if(!v)return;
+  D.focusByDate[todayKey()]={text:v,done:false};
+  showFocusDisplay(v,false);document.getElementById('focusInput').value='';save();
+}
+function showFocusDisplay(text,done){
+  document.getElementById('focusInputRow').style.display='none';
+  const d=document.getElementById('focusDisplay');d.classList.add('visible');
+  document.getElementById('focusDisplayText').textContent=(done?'✅ ':'')+text;
+  document.getElementById('focusBlock').classList.add('has-focus');
+  document.querySelector('.focus-actions').style.display=done?'none':'flex';
+}
+function editFocus(){
+  const f=D.focusByDate[todayKey()];
+  document.getElementById('focusInput').value=f?.text||'';
+  document.getElementById('focusInputRow').style.display='flex';
+  document.getElementById('focusDisplay').classList.remove('visible');
+  document.getElementById('focusBlock').classList.remove('has-focus');
+  document.getElementById('focusInput').focus();
+}
+function clearFocus(){
+  if(D.focusByDate[todayKey()])D.focusByDate[todayKey()].text='';
+  document.getElementById('focusInputRow').style.display='flex';
+  document.getElementById('focusDisplay').classList.remove('visible');
+  document.getElementById('focusBlock').classList.remove('has-focus');
+  save();
+}
+function completeFocus(){
+  const td=todayKey();if(D.focusByDate[td])D.focusByDate[td].done=true;
+  celebrate();showFocusDisplay(document.getElementById('focusDisplayText').textContent,true);save();
+}
+
+// ════════════════════════════════════════════
+// STATS
+// ════════════════════════════════════════════
+function updateStats(){
+  const td=todayKey();
+  const cpDone=D.trails.reduce((a,t)=>a+t.checkpoints.filter(c=>c.done&&c.doneDate===td).length,0);
+  document.getElementById('statDone').textContent=cpDone;
+  document.getElementById('statStreak').textContent=calcStreak(D);
+  document.getElementById('statXP').textContent=D.xp;
+  if(document.getElementById('xpFill')){
+    const lvl=Math.floor(D.xp/100)+1;
+    const xpInLvl=D.xp%100;
+    document.getElementById('xpFill').style.width=xpInLvl+'%';
+    document.getElementById('xpLabel').textContent=`${D.xp} XP — Nível ${lvl}`;
+    document.getElementById('profileLevel').textContent=`Nv.${lvl}`;
+    if(document.getElementById('profileName'))document.getElementById('profileName').textContent=D.profile?.name||'Aventureiro';
+  }
+}
+function updateNavBadges(){
+  const td=todayKey();
+  const habDone=(D.habitLog[td]||[]).length;
+  const habTotal=D.habits.length;
+  const b=document.getElementById('navBadgeHabits');
+  b.style.display=habDone<habTotal?'flex':'none';
+  b.textContent=habTotal-habDone;
+}
+
+// ════════════════════════════════════════════
+// WEEK
+// ════════════════════════════════════════════
+function buildWeek(){
+  const grid=document.getElementById('weekGrid'),leg=document.getElementById('weekLegend');
+  grid.innerHTML='';leg.innerHTML='';
+  const now=new Date(),dow=now.getDay(),mon=new Date(now);
+  mon.setDate(now.getDate()-(dow===0?6:dow-1));
+  const p=D.profile,wd=p?.workDays||[0,1,2,3,4],acts=p?.activities||{};
+  for(let i=0;i<7;i++){
+    const d=new Date(mon);d.setDate(mon.getDate()+i);
+    const key=d.toISOString().split('T')[0];
+    const isToday=d.toDateString()===now.toDateString();
+    const hasDone=D.trails.some(t=>t.checkpoints.some(c=>c.done&&c.doneDate===key))||(D.habitLog[key]?.length>0);
+    const icons=[];
+    if(wd.includes(i))icons.push('💼');
+    Object.keys(acts).forEach(a=>{if(ACT_ICONS[a])icons.push(ACT_ICONS[a]);});
+    const cell=document.createElement('div');
+    cell.className='day-cell'+(isToday?' today':'')+(hasDone?' has-data':'');
+    cell.innerHTML=`<div class="day-name">${DAY_NAMES[i]}</div><div class="day-num">${d.getDate()}</div><div class="day-icons">${icons.slice(0,2).map(x=>`<span class="day-icon">${x}</span>`).join('')}</div>`;
+    cell.onclick=()=>openDayHistory(key,i,new Date(d));
+    grid.appendChild(cell);
+  }
+  if(wd.length)leg.innerHTML+=`<span class="legend-item"><span class="legend-dot" style="background:#f0a500"></span>Trabalho</span>`;
+  leg.innerHTML+=`<span class="legend-item"><span class="legend-dot" style="background:#3ecf8e"></span>Concluído</span>`;
+}
+
+// ════════════════════════════════════════════
+// DAY HISTORY
+// ════════════════════════════════════════════
+function openDayHistory(key,di,date){
+  document.getElementById('modalDayTitle').textContent=`${DAY_FULL[di]}, ${date.getDate()} ${MN[date.getMonth()]}`;
+  const f=D.focusByDate[key];
+  let h='';
+  if(f?.text)h+=`<div class="history-focus-box"><div class="history-focus-label">⚡ Foco do dia</div><div style="font-weight:600">${f.done?'✅ ':''}${f.text}</div></div>`;
+  else h+=`<div style="font-size:.76rem;color:var(--muted);margin-bottom:12px;font-style:italic">Sem foco definido.</div>`;
+  const dayCps=D.trails.flatMap(t=>t.checkpoints.filter(c=>c.doneDate===key||(!c.done&&key===todayKey())).map(c=>({...c,trailName:t.name})));
+  if(!dayCps.length)h+=`<div class="empty-state" style="padding:16px 0"><span class="emo">📭</span><p>Nenhuma atividade neste dia.</p></div>`;
+  else{
+    const done=dayCps.filter(c=>c.done),pend=dayCps.filter(c=>!c.done);
+    if(done.length){h+=`<div class="h-section-title">✅ Checkpoints concluídos (${done.length})</div>`;done.forEach(c=>{h+=`<div class="history-task"><div class="history-dot done"></div><div>${c.text}<div style="font-size:.65rem;color:var(--muted)">${c.trailName}</div></div></div>`;});}
+    if(pend.length&&key===todayKey()){h+=`<div class="h-section-title">⏳ Pendentes hoje (${pend.length})</div>`;pend.forEach(c=>{h+=`<div class="history-task"><div class="history-dot pend"></div><div>${c.text}</div></div>`;});}
+  }
+  const habsToday=D.habitLog[key]||[];
+  if(habsToday.length){h+=`<div class="h-section-title">🌟 Hábitos do dia</div>`;habsToday.forEach(hid=>{const hb=D.habits.find(h=>h.id===hid);if(hb)h+=`<div class="history-task"><div class="history-dot done"></div><div>${hb.icon} ${hb.name}</div></div>`;});}
+  document.getElementById('modalDayContent').innerHTML=h;
+  openModal('modalDay');
+}
+
+// ════════════════════════════════════════════
+// TRAILS (MAP)
+// ════════════════════════════════════════════
+let selIcon_='⚔',selColor_='#f0a500',editTrailId=null,selHabitIcon_='⭐';
+
+function renderTrails(){
+  const list=document.getElementById('trailsList');list.innerHTML='';
+  const activeCount=D.trails.filter(t=>!t.checkpoints.every(c=>c.done)||t.checkpoints.length===0).length;
+  document.getElementById('trailLimitWarning').style.display=activeCount>=3?'block':'none';
+  document.getElementById('addTrailBtn').style.opacity=activeCount>=3?'.5':'1';
+  if(!D.trails.length){list.innerHTML=`<div class="empty-state"><span class="emo">🗺️</span><p>Nenhuma trilha ainda.<br>Crie sua primeira jornada!</p></div>`;return;}
+  D.trails.forEach(trail=>list.appendChild(buildTrailCard(trail)));
+}
+
+function buildTrailCard(trail){
+  const total=trail.checkpoints.length,done=trail.checkpoints.filter(c=>c.done).length;
+  const pct=total>0?Math.round(done/total*100):0;
+  const isComplete=total>0&&done===total;
+  const card=document.createElement('div');
+  card.className='trail-card'+(isComplete?' completed':'');
+  card.id=`trail-${trail.id}`;
+
+  // Build mini-path SVG
+  const svgNodes=buildMiniPathSVG(trail);
+
+  let checkpointsHTML='';
+  trail.checkpoints.forEach(cp=>{
+    checkpointsHTML+=`
+      <div class="checkpoint-row" id="cp-${cp.id}">
+        <div class="cp-check ${cp.done?'done':''}" onclick="toggleCp(${trail.id},${cp.id})">${cp.done?'✓':''}</div>
+        <div class="cp-text ${cp.done?'done':''}">${cp.text}</div>
+        <div class="cp-actions">
+          <button class="btn-icon red" onclick="deleteCp(${trail.id},${cp.id})">✕</button>
+        </div>
+      </div>`;
+  });
+
+  const completedSeal=isComplete?`<div class="completed-seal"><span class="seal-icon">🏆</span><div class="seal-text">Trilha Conquistada!</div></div>`:'';
+
+  card.innerHTML=`
+    <div class="trail-header" onclick="toggleTrailExpand(${trail.id})">
+      <div class="trail-icon-wrap" style="background:${trail.color}22">${trail.icon}</div>
+      <div class="trail-info">
+        <div class="trail-name">${trail.name}</div>
+        <div class="trail-meta">${done}/${total} checkpoints • ${pct}%</div>
+      </div>
+      <div class="trail-pct">${pct}%</div>
+      <button class="btn-icon red" onclick="event.stopPropagation();askDeleteTrail(${trail.id})">✕</button>
+    </div>
+    <div class="trail-progress-bar"><div class="trail-progress-fill" style="width:${pct}%;background:${trail.color}"></div></div>
+    <div class="trail-body" id="trail-body-${trail.id}" style="${trail.expanded?'':'display:none'}">
+      <div class="trail-map">${svgNodes}</div>
+      ${completedSeal}
+      <div>${checkpointsHTML}</div>
+      ${!isComplete?`<div class="add-cp-area"><input type="text" id="cp-input-${trail.id}" placeholder="+ Adicionar tarefa/checkpoint..." onkeydown="if(event.key==='Enter')addCp(${trail.id})"><button class="btn btn-xs btn-ghost" onclick="addCp(${trail.id})">+</button></div>`:''}
+    </div>
+  `;
+  return card;
+}
+
+function buildMiniPathSVG(trail){
+  const total=trail.checkpoints.length;if(!total)return '';
+  const w=300,h=60;
+  const nodes=[];
+  for(let i=0;i<=Math.min(total,6);i++){
+    const x=20+(i*(w-40)/Math.min(total,6));
+    const y=h/2+(i%2===0?-12:12);
+    nodes.push({x,y,done:i===0||trail.checkpoints[i-1]?.done,active:i>0&&!trail.checkpoints[i-1]?.done&&(i===1||trail.checkpoints[i-2]?.done)});
+  }
+  let svg=`<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:60px">`;
+  // lines
+  for(let i=0;i<nodes.length-1;i++){
+    const c1=nodes[i],c2=nodes[i+1];
+    svg+=`<line x1="${c1.x}" y1="${c1.y}" x2="${c2.x}" y2="${c2.y}" stroke="${c1.done&&c2.done?trail.color:'rgba(255,255,255,0.1)'}" stroke-width="2" stroke-dasharray="${c1.done&&c2.done?'none':'5,3'}"/>`;
+  }
+  // nodes
+  nodes.forEach((n,i)=>{
+    if(n.active){svg+=`<circle cx="${n.x}" cy="${n.y}" r="10" fill="none" stroke="${trail.color}" stroke-width="1.5" opacity="0.4"><animate attributeName="r" values="10;14;10" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite"/></circle>`;}
+    svg+=`<circle cx="${n.x}" cy="${n.y}" r="${i===0?8:6}" fill="${n.done?trail.color:'#1a1a2e'}" stroke="${n.done?trail.color:n.active?trail.color:'rgba(255,255,255,0.15)'}" stroke-width="2"/>`;
+    svg+=`<text x="${n.x}" y="${n.y+4}" text-anchor="middle" font-size="${i===0?8:7}" fill="${n.done?'#000':'rgba(255,255,255,0.5)'}">${i===0?trail.icon:n.done?'✓':'·'}</text>`;
+  });
+  svg+='</svg>';
+  return svg;
+}
+
+function toggleTrailExpand(id){
+  const trail=D.trails.find(t=>t.id===id);if(!trail)return;
+  trail.expanded=!trail.expanded;
+  const body=document.getElementById(`trail-body-${id}`);
+  if(body)body.style.display=trail.expanded?'block':'none';
+  save();
+}
+
+function toggleCp(trailId,cpId){
+  const trail=D.trails.find(t=>t.id===trailId);if(!trail)return;
+  const cp=trail.checkpoints.find(c=>c.id===cpId);if(!cp)return;
+  cp.done=!cp.done;
+  cp.doneDate=cp.done?todayKey():null;
+  if(cp.done){
+    D.xp+=20;celebrate();
+    // check if trail complete
+    if(trail.checkpoints.every(c=>c.done)){
+      setTimeout(()=>showTreasure(trail),600);
+    }
+  }
+  save();renderTrails();buildWeek();
+}
+
+function deleteCp(trailId,cpId){
+  const trail=D.trails.find(t=>t.id===trailId);if(!trail)return;
+  trail.checkpoints=trail.checkpoints.filter(c=>c.id!==cpId);
+  save();renderTrails();
+}
+
+function addCp(trailId){
+  const input=document.getElementById(`cp-input-${trailId}`);
+  const text=input.value.trim();if(!text)return;
+  const trail=D.trails.find(t=>t.id===trailId);if(!trail)return;
+  trail.checkpoints.push({id:++D.nextId,text,done:false,doneDate:null});
+  input.value='';save();renderTrails();
+}
+
+function openAddTrail(){
+  const activeCount=D.trails.filter(t=>!t.checkpoints.every(c=>c.done)||t.checkpoints.length===0).length;
+  if(activeCount>=3){alert('⚠️ Máximo de 3 trilhas ativas!\nA ciência mostra que focar em muitas coisas ao mesmo tempo reduz a produtividade em até 40%.\nConclua uma trilha primeiro!');return;}
+  editTrailId=null;
+  document.getElementById('modalTrailTitle').textContent='Nova Trilha';
+  document.getElementById('trail-name').value='';
+  selIcon_='⚔';selColor_='#f0a500';
+  document.querySelectorAll('#iconPicker .ip-btn').forEach((b,i)=>b.classList.toggle('sel',i===0));
+  document.querySelectorAll('#colorPicker .cp-btn').forEach((b,i)=>b.classList.toggle('sel',i===0));
+  openModal('modalAddTrail');
+}
+function selIcon(el,icon){selIcon_=icon;document.querySelectorAll('#iconPicker .ip-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');}
+function selColor(el,color){selColor_=color;document.querySelectorAll('#colorPicker .cp-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');}
+function saveTrail(){
+  const name=document.getElementById('trail-name').value.trim();if(!name)return;
+  D.trails.push({id:++D.nextId,name,icon:selIcon_,color:selColor_,expanded:true,checkpoints:[]});
+  save();renderTrails();closeModal('modalAddTrail');
+}
+
+let confirmCb=null;
+function askDeleteTrail(id){
+  const t=D.trails.find(t=>t.id===id);if(!t)return;
+  document.getElementById('confirmTitle').textContent='Excluir Trilha';
+  document.getElementById('confirmText').textContent=`Excluir "${t.name}" e todos seus checkpoints?`;
+  confirmCb=()=>{D.trails=D.trails.filter(t=>t.id!==id);save();renderTrails();closeModal('modalConfirm');};
+  openModal('modalConfirm');
+}
+function doConfirm(){if(confirmCb){confirmCb();confirmCb=null;}}
+
+// ════════════════════════════════════════════
+// TREASURE
+// ════════════════════════════════════════════
+function showTreasure(trail){
+  bigCelebrate();
+  document.getElementById('treasureEmoji').textContent='🏆';
+  document.getElementById('treasureTitle').textContent=`"${trail.name}" Conquistada!`;
+  document.getElementById('treasureSub').textContent='Você completou todos os checkpoints desta trilha. Incrível trabalho!';
+  document.getElementById('treasureBadge').textContent=`+100 XP ⚔ Trilha Concluída`;
+  D.xp+=100;save();
+  document.getElementById('treasureOverlay').classList.add('open');
+}
+function closeTreasure(){document.getElementById('treasureOverlay').classList.remove('open');}
+
+// ════════════════════════════════════════════
+// HABITS
+// ════════════════════════════════════════════
+function renderHabits(){
+  const list=document.getElementById('habitsList');if(!list)return;
+  list.innerHTML='';
+  const td=todayKey();
+  const todayLog=D.habitLog[td]||[];
+  const doneCount=todayLog.length,total=D.habits.length;
+  document.getElementById('habits-progress-label').textContent=` — ${doneCount}/${total}`;
+  if(!D.habits.length){list.innerHTML=`<div class="empty-state" style="padding:16px 0"><span class="emo">🌟</span><p>Nenhum hábito.<br>Adicione o primeiro!</p></div>`;return;}
+  D.habits.forEach(h=>{
+    const isDone=todayLog.includes(h.id);
+    const el=document.createElement('div');el.className='habit-item';
+    // streak
+    let streak=0;
+    for(let i=0;i<90;i++){const d=new Date();d.setDate(d.getDate()-i);const k=d.toISOString().split('T')[0];if((D.habitLog[k]||[]).includes(h.id))streak++;else if(i>0)break;}
+    el.innerHTML=`
+      <div class="habit-icon-wrap" style="background:${h.color||'#f0a500'}22">${h.icon}</div>
+      <div class="habit-info">
+        <div class="habit-name">${h.name}</div>
+        <div class="habit-streak">${streak>0?`🔥 ${streak} dias seguidos`:'Comece hoje!'}</div>
+      </div>
+      <div class="habit-check ${isDone?'done':''}" onclick="toggleHabit(${h.id})">${isDone?'✓':''}</div>
+      <button class="btn-icon red" onclick="deleteHabit(${h.id})" style="font-size:.8rem">✕</button>
+    `;
+    list.appendChild(el);
+  });
+}
+function toggleHabit(id){
+  const td=todayKey();
+  if(!D.habitLog[td])D.habitLog[td]=[];
+  const idx=D.habitLog[td].indexOf(id);
+  if(idx>-1){D.habitLog[td].splice(idx,1);}
+  else{D.habitLog[td].push(id);D.xp+=10;celebrate();}
+  save();renderHabits();buildWeek();
+}
+function deleteHabit(id){D.habits=D.habits.filter(h=>h.id!==id);const td=todayKey();if(D.habitLog[td]){D.habitLog[td]=D.habitLog[td].filter(i=>i!==id);}save();renderHabits();}
+function openAddHabit(){selHabitIcon_='⭐';document.getElementById('habit-name-input').value='';document.querySelectorAll('#habitIconPicker .ip-btn').forEach((b,i)=>b.classList.toggle('sel',i===0));openModal('modalAddHabit');}
+function selHabitIcon(el,icon){selHabitIcon_=icon;document.querySelectorAll('#habitIconPicker .ip-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');}
+function saveHabit(){
+  const name=document.getElementById('habit-name-input').value.trim();if(!name)return;
+  D.habits.push({id:++D.nextId,name,icon:selHabitIcon_,color:'#f0a500'});
+  save();renderHabits();closeModal('modalAddHabit');
+}
+function renderHabitHistory(){
+  const grid=document.getElementById('habitHistoryGrid');if(!grid)return;
+  grid.innerHTML='';const now=new Date();
+  for(let i=27;i>=0;i--){
+    const d=new Date(now);d.setDate(now.getDate()-i);
+    const k=d.toISOString().split('T')[0];
+    const isToday=i===0;
+    const hasDone=(D.habitLog[k]||[]).length>0;
+    const cell=document.createElement('div');
+    cell.className='hg-cell'+(isToday?' today':hasDone?' done':'');
+    cell.title=k;grid.appendChild(cell);
+  }
+}
+
+// ════════════════════════════════════════════
+// ACHIEVEMENTS
+// ════════════════════════════════════════════
+function checkAchievements(){
+  let newUnlocked=false;
+  ACHIEVEMENTS.forEach(a=>{
+    if(!D.unlockedAch.includes(a.id)&&a.check(D)){
+      D.unlockedAch.push(a.id);D.xp+=a.xp;newUnlocked=true;
+      setTimeout(()=>showAchievementToast(a),500);
+    }
+  });
+  if(newUnlocked){localStorage.setItem('fq_v2',JSON.stringify(D));updateStats();}
+}
+function showAchievementToast(a){
+  document.getElementById('treasureEmoji').textContent=a.icon;
+  document.getElementById('treasureTitle').textContent='Conquista Desbloqueada!';
+  document.getElementById('treasureSub').textContent=a.desc;
+  document.getElementById('treasureBadge').textContent=`+${a.xp} XP — ${a.name}`;
+  document.getElementById('treasureOverlay').classList.add('open');
+  bigCelebrate();
+}
+function renderAchievements(){
+  const grid=document.getElementById('achievementsList');if(!grid)return;
+  grid.innerHTML='';
+  ACHIEVEMENTS.forEach(a=>{
+    const unlocked=D.unlockedAch.includes(a.id);
+    const el=document.createElement('div');el.className='achievement-card'+(unlocked?' unlocked':'');
+    el.innerHTML=`<span class="ach-icon">${a.icon}</span><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div>`;
+    if(unlocked)el.title=`+${a.xp} XP`;
+    grid.appendChild(el);
+  });
+}
+
+// ════════════════════════════════════════════
+// PROFILE
+// ════════════════════════════════════════════
+function renderProfile(){
+  if(!D.profile)return;
+  const p=D.profile;
+  const initials=p.name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase()||'🧙';
+  document.getElementById('profileAvatar').textContent=initials;
+  document.getElementById('profileName').textContent=p.name;
+  document.getElementById('profileMission').textContent=p.mission||'Sem missão definida';
+  document.getElementById('profileFocusBadge').textContent=p.focus?`🎯 ${p.focus}`:'';
+  document.getElementById('settingActVal').textContent=Object.keys(p.activities||{}).map(a=>ACT_ICONS[a]).join(' ')||'—';
+  const am=p.workAM||['08:00','12:00'],pm=p.workPM||['14:00','18:00'];
+  document.getElementById('settingSchedVal').textContent=`${am[0]}–${am[1]} / ${pm[0]}–${pm[1]}`;
+  document.getElementById('settingNotifVal').textContent=(p.notif?.focus||p.notif?.night)?'Ativadas':'Desativadas';
+  updateStats();
+}
+function openEditProfile(){
+  const p=D.profile||{};
+  document.getElementById('ep-name').value=p.name||'';
+  document.getElementById('ep-mission').value=p.mission||'';
+  document.getElementById('ep-focus').value=p.focus||'';
+  openModal('modalEditProfile');
+}
+function saveProfile(){
+  if(!D.profile)D.profile={};
+  D.profile.name=document.getElementById('ep-name').value.trim()||'Aventureiro';
+  D.profile.mission=document.getElementById('ep-mission').value.trim();
+  D.profile.focus=document.getElementById('ep-focus').value.trim();
+  save();renderProfile();initHeader();closeModal('modalEditProfile');
+}
+function openScheduleModal(){
+  const wd=D.profile?.workDays||[0,1,2,3,4];
+  document.querySelectorAll('#sched-days .day-btn').forEach(btn=>{
+    const d=parseInt(btn.dataset.day);
+    btn.classList.toggle('selected',wd.includes(d));
+    btn.onclick=()=>btn.classList.toggle('selected');
+  });
+  const am=D.profile?.workAM||['08:00','12:00'],pm=D.profile?.workPM||['14:00','18:00'];
+  document.getElementById('ss-am1').value=am[0];document.getElementById('ss-am2').value=am[1];
+  document.getElementById('ss-pm1').value=pm[0];document.getElementById('ss-pm2').value=pm[1];
+  openModal('modalSchedule');
+}
+function saveSchedule(){
+  if(!D.profile)return;
+  D.profile.workDays=[...document.querySelectorAll('#sched-days .day-btn.selected')].map(b=>parseInt(b.dataset.day));
+  D.profile.workAM=[document.getElementById('ss-am1').value,document.getElementById('ss-am2').value];
+  D.profile.workPM=[document.getElementById('ss-pm1').value,document.getElementById('ss-pm2').value];
+  save();buildWeek();renderProfile();closeModal('modalSchedule');
+}
+function openActivitiesModal(){
+  const acts=D.profile?.activities||{};
+  document.querySelectorAll('#act-modal-grid .activity-btn').forEach(b=>b.classList.toggle('selected',!!acts[b.dataset.act]));
+  openModal('modalActivities');
+}
+function saveActivities(){
+  if(!D.profile)return;
+  D.profile.activities={};
+  document.querySelectorAll('#act-modal-grid .activity-btn.selected').forEach(b=>{D.profile.activities[b.dataset.act]={days:[]};});
+  save();buildWeek();renderProfile();closeModal('modalActivities');
+}
+function saveNotif(){
+  if(!D.profile)return;
+  D.profile.notif={focus:document.getElementById('notif-focus').checked,night:document.getElementById('notif-night').checked,time:document.getElementById('notif-time').value};
+  save();renderProfile();
+}
+
+// ════════════════════════════════════════════
+// TIMER
+// ════════════════════════════════════════════
+let tSecs=25*60,tDur=25*60,tRunning=false,tInt=null;
+function tfmt(s){return`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
+function updateRing(){document.getElementById('timerRingFill').setAttribute('stroke-dashoffset',CIRC*(1-tSecs/tDur));}
+function startTimer(){
+  if(tRunning)return;tRunning=true;
+  document.getElementById('timerStatus').textContent='🔥 Foco ativo — não se distraia!';
+  tInt=setInterval(()=>{tSecs--;document.getElementById('timerDisplay').textContent=tfmt(tSecs);updateRing();if(tSecs<=0){clearInterval(tInt);tRunning=false;document.getElementById('timerStatus').textContent='✅ Sessão concluída! Descanse.';celebrate();}},1000);
+}
+function pauseTimer(){clearInterval(tInt);tRunning=false;document.getElementById('timerStatus').textContent='⏸ Pausado';}
+function resetTimer(){clearInterval(tInt);tRunning=false;tSecs=tDur;document.getElementById('timerDisplay').textContent=tfmt(tSecs);document.getElementById('timerStatus').textContent='Pronto para começar';updateRing();}
+function setTimerMode(m,l,btn){tDur=m*60;tSecs=tDur;clearInterval(tInt);tRunning=false;document.getElementById('timerDisplay').textContent=tfmt(tSecs);document.getElementById('timerStatus').textContent=l;document.querySelectorAll('.timer-mode-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');updateRing();}
+function updateStreak(){
+  const dots=document.getElementById('streakDots');if(!dots)return;dots.innerHTML='';
+  const now=new Date();
+  for(let i=29;i>=0;i--){
+    const d=new Date(now);d.setDate(now.getDate()-i);const k=d.toISOString().split('T')[0];
+    const has=D.trails.some(t=>t.checkpoints.some(c=>c.doneDate===k))||(D.habitLog[k]?.length>0);
+    const dot=document.createElement('div');dot.className='streak-dot'+(i===0?' today':has?' done':'');
+    dots.appendChild(dot);
+  }
+}
+
+// ════════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════════
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
+
+// ════════════════════════════════════════════
+// NOTIFICATIONS
+// ════════════════════════════════════════════
+function checkNotifBanner(){
+  // Silently request if already granted setup exists
+}
+
+// ════════════════════════════════════════════
+// CONFETTI
+// ════════════════════════════════════════════
+const COLORS=['#f0a500','#e05c2a','#3ecf8e','#9b6dff','#4a9eff','#ff6b9d','#fff'];
+function celebrate(){
+  const wrap=document.getElementById('confettiWrap');
+  for(let i=0;i<25;i++){
+    const p=document.createElement('div');p.className='confetti-piece';
+    p.style.cssText=`left:${Math.random()*100}%;top:0;background:${COLORS[~~(Math.random()*COLORS.length)]};animation-duration:${.7+Math.random()*1.1}s;animation-delay:${Math.random()*.4}s;width:${4+Math.random()*7}px;height:${4+Math.random()*7}px;border-radius:${Math.random()>.5?'50%':'2px'};`;
+    wrap.appendChild(p);setTimeout(()=>p.remove(),2200);
+  }
+}
+function bigCelebrate(){
+  const wrap=document.getElementById('confettiWrap');
+  for(let i=0;i<70;i++){
+    const p=document.createElement('div');p.className='confetti-piece';
+    p.style.cssText=`left:${Math.random()*100}%;top:0;background:${COLORS[~~(Math.random()*COLORS.length)]};animation-duration:${.8+Math.random()*1.5}s;animation-delay:${Math.random()*.7}s;width:${5+Math.random()*10}px;height:${5+Math.random()*10}px;border-radius:${Math.random()>.5?'50%':'2px'};`;
+    wrap.appendChild(p);setTimeout(()=>p.remove(),3000);
+  }
+}
+
+// ════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════
+window.addEventListener('load',initApp);
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then(r => console.log("SW registered:", r.scope))
+      .catch(e => console.log("SW error:", e));
+  });
+}
+</script>
+</body>
+</html>
