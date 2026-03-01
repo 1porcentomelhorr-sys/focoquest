@@ -392,6 +392,29 @@ body::before{
 .mt-8{margin-top:8px;} .mt-12{margin-top:12px;} .mb-13{margin-bottom:13px;}
 .flex{display:flex;} .flex-between{display:flex;justify-content:space-between;align-items:center;}
 .gap-7{gap:7px;}
+
+/* Deadline badge */
+.deadline-badge{display:inline-flex;align-items:center;gap:4px;font-size:.65rem;padding:3px 8px;border-radius:20px;font-family:'Syne',sans-serif;font-weight:700;margin-top:3px;}
+.deadline-ok{background:var(--green-dim);color:var(--green);}
+.deadline-warn{background:rgba(240,165,0,.18);color:var(--accent);}
+.deadline-urgent{background:var(--red-dim);color:var(--red);animation:pulse-glow .8s infinite;}
+.deadline-overdue{background:rgba(224,92,42,.3);color:var(--red);}
+
+/* Profile photo */
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--accent));display:flex;align-items:center;justify-content:center;font-size:1.7rem;box-shadow:0 0 24px rgba(155,109,255,.3);overflow:hidden;cursor:pointer;position:relative;}
+.profile-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.avatar-edit-hint{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;opacity:0;transition:opacity .2s;border-radius:50%;font-family:'Syne',sans-serif;}
+.profile-avatar:hover .avatar-edit-hint{opacity:1;}
+#avatarFileInput{display:none;}
+
+/* Notif modal UX */
+.notif-section{background:var(--surface2);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;}
+.notif-section-title{font-family:'Syne',sans-serif;font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px;}
+.notif-status-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.notif-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.notif-status-dot.granted{background:var(--green);}
+.notif-status-dot.denied{background:var(--red);}
+.notif-status-dot.default{background:var(--accent);}
 </style>
 </head>
 <body>
@@ -580,7 +603,11 @@ body::before{
 <div class="screen" id="screen-profile">
   <div class="card profile-hero fu">
     <div class="profile-avatar-wrap">
-      <div class="profile-avatar" id="profileAvatar">🧙</div>
+      <div class="profile-avatar" id="profileAvatar" onclick="document.getElementById('avatarFileInput').click()">
+        <span id="profileAvatarContent">🧙</span>
+        <div class="avatar-edit-hint">📷 Alterar</div>
+      </div>
+      <input type="file" id="avatarFileInput" accept="image/*" onchange="handleAvatarUpload(event)">
       <div class="profile-level" id="profileLevel">Nv.1</div>
     </div>
     <div class="profile-name" id="profileName">Aventureiro</div>
@@ -594,7 +621,7 @@ body::before{
     <div class="settings-item" onclick="openEditProfile()"><div class="settings-icon-wrap">👤</div><div style="flex:1"><div class="settings-label">Editar Perfil</div><div class="settings-val">Nome, missão, foco</div></div><span class="settings-arrow">›</span></div>
     <div class="settings-item" onclick="openScheduleModal()"><div class="settings-icon-wrap">📅</div><div style="flex:1"><div class="settings-label">Horários de Trabalho</div><div class="settings-val" id="settingSchedVal">—</div></div><span class="settings-arrow">›</span></div>
     <div class="settings-item" onclick="openActivitiesModal()"><div class="settings-icon-wrap">🏃</div><div style="flex:1"><div class="settings-label">Atividades Fixas</div><div class="settings-val" id="settingActVal">—</div></div><span class="settings-arrow">›</span></div>
-    <div class="settings-item" onclick="openModal('modalNotif')"><div class="settings-icon-wrap">🔔</div><div style="flex:1"><div class="settings-label">Notificações</div><div class="settings-val" id="settingNotifVal">Desativadas</div></div><span class="settings-arrow">›</span></div>
+    <div class="settings-item" onclick="openNotifModal()"><div class="settings-icon-wrap">🔔</div><div style="flex:1"><div class="settings-label">Notificações</div><div class="settings-val" id="settingNotifVal">Desativadas</div></div><span class="settings-arrow">›</span></div>
     <div class="settings-item" onclick="if(confirm('Resetar todos os dados?')){localStorage.clear();location.reload();}"><div class="settings-icon-wrap">🗑</div><div style="flex:1"><div class="settings-label" style="color:var(--red)">Resetar App</div><div class="settings-val">Apaga tudo</div></div><span class="settings-arrow">›</span></div>
   </div>
   <div class="card fu3" style="text-align:center;padding:13px"><div style="font-size:.68rem;color:var(--muted)">FocoQuest v2.0 — Feito com ⚔ para quem tem missão</div></div>
@@ -621,6 +648,7 @@ body::before{
     <div class="modal-handle"></div>
     <h2 id="modalTrailTitle">Nova Trilha</h2>
     <div class="form-group"><label class="form-label">Nome da trilha</label><input type="text" id="trail-name" class="form-input" placeholder="Ex: SaaS Bíblico"></div>
+    <div class="form-group"><label class="form-label">Prazo (opcional)</label><input type="date" id="trail-deadline" class="form-input"></div>
     <div class="form-group"><label class="form-label">Ícone</label>
       <div class="icon-picker" id="iconPicker">
         <span class="ip-btn sel" data-icon="⚔" onclick="selIcon(this,'⚔')">⚔</span>
@@ -710,10 +738,48 @@ body::before{
 </div></div>
 
 <!-- Notifications -->
-<div class="overlay" id="modalNotif"><div class="modal"><div class="modal-handle"></div><h2>Notificações</h2>
-  <div class="toggle-row"><div><div class="toggle-label">Lembrete do foco do dia</div><div class="toggle-sub">Avisa quando você não definiu seu foco</div></div><label class="toggle"><input type="checkbox" id="notif-focus" onchange="saveNotif()"><span class="toggle-slider"></span></label></div>
-  <div class="toggle-row"><div><div class="toggle-label">Lembrete noturno</div><div class="toggle-sub">Registre suas conquistas do dia</div></div><label class="toggle"><input type="checkbox" id="notif-night" onchange="saveNotif()"><span class="toggle-slider"></span></label></div>
-  <div class="form-group" style="margin-top:12px"><label class="form-label">Horário do lembrete</label><input type="time" id="notif-time" class="form-input" value="21:00" onchange="saveNotif()"></div>
+<div class="overlay" id="modalNotif"><div class="modal"><div class="modal-handle"></div><h2>🔔 Notificações</h2>
+
+  <!-- Status atual -->
+  <div class="notif-status-box" id="notifStatusBox">
+    <div class="notif-status-dot default" id="notifStatusDot"></div>
+    <div style="flex:1">
+      <div style="font-size:.84rem;font-weight:500" id="notifStatusText">Verificando permissão...</div>
+      <div style="font-size:.7rem;color:var(--muted2)" id="notifStatusSub">Toque para ativar se necessário</div>
+    </div>
+    <button class="btn btn-xs" id="notifPermBtn" onclick="requestNotifPermission()" style="display:none">Ativar</button>
+  </div>
+
+  <!-- O que notificar -->
+  <div class="notif-section">
+    <div class="notif-section-title">O que notificar ao abrir o app</div>
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Foco do dia não definido</div>
+        <div class="toggle-sub">Avisa se você abrir sem foco definido</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="notif-focus" onchange="saveNotif()"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Prazo se aproximando</div>
+        <div class="toggle-sub">Avisa quando trilha vence em ≤3 dias</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="notif-deadline" onchange="saveNotif()"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="toggle-row" style="border-bottom:none">
+      <div>
+        <div class="toggle-label">Hábitos pendentes</div>
+        <div class="toggle-sub">Avisa se há hábitos não marcados hoje</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="notif-habits" onchange="saveNotif()"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:11px 13px;font-size:.74rem;color:var(--muted2);line-height:1.55;margin-bottom:14px">
+    💡 <strong style="color:var(--text)">Como funciona:</strong> as notificações são disparadas quando você abre o app. Para lembretes agendados (tipo às 21h), isso requer integração com servidor — disponível em breve.
+  </div>
+
   <button class="btn btn-ghost btn-full" onclick="closeModal('modalNotif')">Fechar</button>
 </div></div>
 
@@ -847,7 +913,11 @@ function finishOnboarding(){
 function initApp(){
   if(!D.profile){document.getElementById('onboarding').style.display='flex';return;}
   document.getElementById('onboarding').style.display='none';
-  initHeader();loadFocus();buildWeek();renderProfile();renderTrails();renderHabits();renderAchievements();updateStats();updateNavBadges();checkNotifBanner();
+  initHeader();loadFocus();buildWeek();renderProfile();renderTrails();renderHabits();renderAchievements();updateStats();updateNavBadges();
+  // Fire notifications on open
+  setTimeout(fireOpenNotifications, 1500);
+  // Show urgency banner on home
+  setTimeout(renderUrgencyBanner, 500);
 }
 
 // ════════════════════════════════════════════
@@ -863,6 +933,7 @@ function goScreen(name){
   if(name==='timer')updateStreak();
   if(name==='habits'){renderHabits();renderAchievements();renderHabitHistory();}
   if(name==='map')renderTrails();
+  if(name==='home')renderUrgencyBanner();
 }
 
 // ════════════════════════════════════════════
@@ -1003,6 +1074,18 @@ function renderTrails(){
   D.trails.forEach(trail=>list.appendChild(buildTrailCard(trail)));
 }
 
+function getDeadlineBadge(deadline){
+  if(!deadline)return'';
+  const now=new Date();now.setHours(0,0,0,0);
+  const dl=new Date(deadline);dl.setHours(0,0,0,0);
+  const diff=Math.round((dl-now)/(1000*60*60*24));
+  if(diff<0)return`<span class="deadline-badge deadline-overdue">⚠️ Vencida há ${Math.abs(diff)} dia${Math.abs(diff)>1?'s':''}</span>`;
+  if(diff===0)return`<span class="deadline-badge deadline-urgent">🔴 Vence HOJE!</span>`;
+  if(diff<=3)return`<span class="deadline-badge deadline-urgent">🔴 ${diff} dia${diff>1?'s':''} restante${diff>1?'s':''}</span>`;
+  if(diff<=7)return`<span class="deadline-badge deadline-warn">⏰ ${diff} dias restantes</span>`;
+  return`<span class="deadline-badge deadline-ok">📅 ${diff} dias restantes</span>`;
+}
+
 function buildTrailCard(trail){
   const total=trail.checkpoints.length,done=trail.checkpoints.filter(c=>c.done).length;
   const pct=total>0?Math.round(done/total*100):0;
@@ -1010,10 +1093,8 @@ function buildTrailCard(trail){
   const card=document.createElement('div');
   card.className='trail-card'+(isComplete?' completed':'');
   card.id=`trail-${trail.id}`;
-
-  // Build mini-path SVG
   const svgNodes=buildMiniPathSVG(trail);
-
+  const deadlineBadge=getDeadlineBadge(trail.deadline);
   let checkpointsHTML='';
   trail.checkpoints.forEach(cp=>{
     checkpointsHTML+=`
@@ -1025,15 +1106,14 @@ function buildTrailCard(trail){
         </div>
       </div>`;
   });
-
   const completedSeal=isComplete?`<div class="completed-seal"><span class="seal-icon">🏆</span><div class="seal-text">Trilha Conquistada!</div></div>`:'';
-
   card.innerHTML=`
     <div class="trail-header" onclick="toggleTrailExpand(${trail.id})">
       <div class="trail-icon-wrap" style="background:${trail.color}22">${trail.icon}</div>
       <div class="trail-info">
         <div class="trail-name">${trail.name}</div>
         <div class="trail-meta">${done}/${total} checkpoints • ${pct}%</div>
+        ${deadlineBadge}
       </div>
       <div class="trail-pct">${pct}%</div>
       <button class="btn-icon red" onclick="event.stopPropagation();askDeleteTrail(${trail.id})">✕</button>
@@ -1117,6 +1197,7 @@ function openAddTrail(){
   editTrailId=null;
   document.getElementById('modalTrailTitle').textContent='Nova Trilha';
   document.getElementById('trail-name').value='';
+  document.getElementById('trail-deadline').value='';
   selIcon_='⚔';selColor_='#f0a500';
   document.querySelectorAll('#iconPicker .ip-btn').forEach((b,i)=>b.classList.toggle('sel',i===0));
   document.querySelectorAll('#colorPicker .cp-btn').forEach((b,i)=>b.classList.toggle('sel',i===0));
@@ -1126,7 +1207,8 @@ function selIcon(el,icon){selIcon_=icon;document.querySelectorAll('#iconPicker .
 function selColor(el,color){selColor_=color;document.querySelectorAll('#colorPicker .cp-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');}
 function saveTrail(){
   const name=document.getElementById('trail-name').value.trim();if(!name)return;
-  D.trails.push({id:++D.nextId,name,icon:selIcon_,color:selColor_,expanded:true,checkpoints:[]});
+  const deadline=document.getElementById('trail-deadline').value||null;
+  D.trails.push({id:++D.nextId,name,icon:selIcon_,color:selColor_,expanded:true,checkpoints:[],deadline});
   save();renderTrails();closeModal('modalAddTrail');
 }
 
@@ -1252,15 +1334,22 @@ function renderAchievements(){
 function renderProfile(){
   if(!D.profile)return;
   const p=D.profile;
-  const initials=p.name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase()||'🧙';
-  document.getElementById('profileAvatar').textContent=initials;
+  const avatarEl=document.getElementById('profileAvatar');
+  const avatarContent=document.getElementById('profileAvatarContent');
+  if(p.avatar){
+    avatarContent.innerHTML=`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    const initials=p.name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase()||'🧙';
+    avatarContent.textContent=initials;
+  }
   document.getElementById('profileName').textContent=p.name;
   document.getElementById('profileMission').textContent=p.mission||'Sem missão definida';
   document.getElementById('profileFocusBadge').textContent=p.focus?`🎯 ${p.focus}`:'';
   document.getElementById('settingActVal').textContent=Object.keys(p.activities||{}).map(a=>ACT_ICONS[a]).join(' ')||'—';
   const am=p.workAM||['08:00','12:00'],pm=p.workPM||['14:00','18:00'];
   document.getElementById('settingSchedVal').textContent=`${am[0]}–${am[1]} / ${pm[0]}–${pm[1]}`;
-  document.getElementById('settingNotifVal').textContent=(p.notif?.focus||p.notif?.night)?'Ativadas':'Desativadas';
+  const any=p.notif?.focus||p.notif?.deadline||p.notif?.habits;
+  document.getElementById('settingNotifVal').textContent=any?'Ativas':'Desativadas';
   updateStats();
 }
 function openEditProfile(){
@@ -1346,10 +1435,150 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
 
 // ════════════════════════════════════════════
-// NOTIFICATIONS
+// AVATAR UPLOAD
 // ════════════════════════════════════════════
-function checkNotifBanner(){
-  // Silently request if already granted setup exists
+function handleAvatarUpload(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    D.profile.avatar=ev.target.result;
+    save();renderProfile();
+  };
+  reader.readAsDataURL(file);
+}
+
+// ════════════════════════════════════════════
+// NOTIFICATIONS (works on open)
+// ════════════════════════════════════════════
+function updateNotifStatusUI(){
+  if(!('Notification' in window)){
+    document.getElementById('notifStatusText').textContent='Notificações não suportadas neste navegador';
+    document.getElementById('notifStatusSub').textContent='Tente abrir no Chrome ou Safari';
+    document.getElementById('notifStatusDot').className='notif-status-dot denied';
+    return;
+  }
+  const perm=Notification.permission;
+  const dot=document.getElementById('notifStatusDot');
+  const txt=document.getElementById('notifStatusText');
+  const sub=document.getElementById('notifStatusSub');
+  const btn=document.getElementById('notifPermBtn');
+  if(perm==='granted'){
+    dot.className='notif-status-dot granted';
+    txt.textContent='✅ Notificações ativadas';
+    sub.textContent='Você receberá avisos ao abrir o app';
+    btn.style.display='none';
+  } else if(perm==='denied'){
+    dot.className='notif-status-dot denied';
+    txt.textContent='❌ Notificações bloqueadas';
+    sub.textContent='Ative nas configurações do navegador/celular';
+    btn.style.display='none';
+  } else {
+    dot.className='notif-status-dot default';
+    txt.textContent='Permissão não concedida ainda';
+    sub.textContent='Toque em Ativar para receber notificações';
+    btn.style.display='flex';
+  }
+}
+
+function requestNotifPermission(){
+  if(!('Notification' in window))return;
+  Notification.requestPermission().then(perm=>{
+    updateNotifStatusUI();
+    if(perm==='granted'){
+      new Notification('FocoQuest ⚔',{body:'Notificações ativadas! Você receberá avisos ao abrir o app.',icon:'/icon-192.png'});
+      if(!D.profile.notif)D.profile.notif={};
+      D.profile.notif.focus=true;D.profile.notif.deadline=true;D.profile.notif.habits=true;
+      document.getElementById('notif-focus').checked=true;
+      document.getElementById('notif-deadline').checked=true;
+      document.getElementById('notif-habits').checked=true;
+      saveNotif();
+    }
+  });
+}
+
+function saveNotif(){
+  if(!D.profile)return;
+  D.profile.notif={
+    focus:document.getElementById('notif-focus').checked,
+    deadline:document.getElementById('notif-deadline').checked,
+    habits:document.getElementById('notif-habits').checked,
+  };
+  save();
+  const any=D.profile.notif.focus||D.profile.notif.deadline||D.profile.notif.habits;
+  document.getElementById('settingNotifVal').textContent=any?'Ativas':'Desativadas';
+}
+
+function openNotifModal(){
+  const n=D.profile?.notif||{};
+  document.getElementById('notif-focus').checked=!!n.focus;
+  document.getElementById('notif-deadline').checked=!!n.deadline;
+  document.getElementById('notif-habits').checked=!!n.habits;
+  updateNotifStatusUI();
+  openModal('modalNotif');
+}
+
+// Fire notifications on app open
+function fireOpenNotifications(){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const n=D.profile?.notif||{};
+  const td=todayKey();
+  const msgs=[];
+
+  // Focus not set
+  if(n.focus&&(!D.focusByDate[td]||!D.focusByDate[td].text)){
+    msgs.push({title:'FocoQuest ⚡',body:'Você ainda não definiu seu foco do dia!',delay:1000});
+  }
+
+  // Deadlines urgent (≤3 days)
+  if(n.deadline){
+    D.trails.forEach(trail=>{
+      if(!trail.deadline||trail.checkpoints.every(c=>c.done))return;
+      const now=new Date();now.setHours(0,0,0,0);
+      const dl=new Date(trail.deadline);dl.setHours(0,0,0,0);
+      const diff=Math.round((dl-now)/(1000*60*60*24));
+      if(diff<=3&&diff>=0){
+        msgs.push({title:`⏰ Prazo se aproximando!`,body:`Trilha "${trail.name}" vence em ${diff===0?'HOJE':diff+' dia(s)'}!`,delay:2000});
+      } else if(diff<0){
+        msgs.push({title:`⚠️ Prazo vencido!`,body:`Trilha "${trail.name}" venceu há ${Math.abs(diff)} dia(s).`,delay:2000});
+      }
+    });
+  }
+
+  // Habits not done (only after 18h to avoid annoying during the day)
+  if(n.habits&&new Date().getHours()>=18){
+    const done=(D.habitLog[td]||[]).length;
+    const total=D.habits.length;
+    if(done<total){
+      msgs.push({title:'FocoQuest 🌟',body:`Você completou ${done}/${total} hábitos hoje. Ainda dá tempo!`,delay:3000});
+    }
+  }
+
+  // Fire with delays so they don't stack
+  msgs.forEach(m=>{
+    setTimeout(()=>{
+      try{new Notification(m.title,{body:m.body,icon:'/icon-192.png'});}catch(e){}
+    },m.delay);
+  });
+}
+
+// Inline urgency banner on home screen
+function renderUrgencyBanner(){
+  const existing=document.getElementById('urgencyBanner');
+  if(existing)existing.remove();
+  const urgent=D.trails.filter(t=>{
+    if(!t.deadline||t.checkpoints.every(c=>c.done))return false;
+    const now=new Date();now.setHours(0,0,0,0);
+    const dl=new Date(t.deadline);dl.setHours(0,0,0,0);
+    return Math.round((dl-now)/(1000*60*60*24))<=3;
+  });
+  if(!urgent.length)return;
+  const banner=document.createElement('div');
+  banner.id='urgencyBanner';
+  banner.style.cssText='background:var(--red-dim);border:1px solid rgba(224,92,42,.4);border-radius:var(--radius-sm);padding:11px 14px;margin-bottom:13px;font-size:.78rem;color:var(--red);line-height:1.55;cursor:pointer;';
+  banner.innerHTML=`⚠️ <strong>${urgent.length} trilha${urgent.length>1?'s':''} com prazo urgente!</strong> ${urgent.map(t=>`"${t.name}"`).join(', ')} — <span style="text-decoration:underline">Ver trilhas →</span>`;
+  banner.onclick=()=>goScreen('map');
+  const focusBlock=document.getElementById('focusBlock');
+  focusBlock.parentNode.insertBefore(banner,focusBlock);
 }
 
 // ════════════════════════════════════════════
@@ -1382,8 +1611,8 @@ window.addEventListener('load',initApp);
 if("serviceWorker" in navigator){
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js")
-      .then(r => console.log("SW registered:", r.scope))
-      .catch(e => console.log("SW error:", e));
+      .then(r => console.log("SW:", r.scope))
+      .catch(e => console.log("SW err:", e));
   });
 }
 </script>
